@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>外贸销售合同生成器 | 专业版 | 优化PDF留白</title>
+    <!-- 稳定CDN资源 -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #eef2f5; font-family: 'Segoe UI', 'Roboto', 'Times New Roman', '宋体', SimSun, serif; padding: 30px 20px; }
+        .app-container { max-width: 1600px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 28px; }
+        .editor-panel { flex: 1.2; min-width: 340px; background: white; border-radius: 24px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); padding: 24px 22px; height: 85vh; overflow-y: auto; }
+        .preview-panel { flex: 1.8; min-width: 580px; background: #fcfcfc; border-radius: 24px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); padding: 20px; }
+        .card-title { font-size: 1.4rem; font-weight: 600; border-left: 6px solid #0a5c9e; padding-left: 18px; margin-bottom: 20px; color: #1a2c3e; }
+        .form-group { margin-bottom: 18px; }
+        label { font-weight: 600; font-size: 0.8rem; color: #2c5282; display: block; margin-bottom: 5px; }
+        input, textarea, select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e0; border-radius: 14px; font-size: 0.85rem; font-family: inherit; transition: 0.2s; background: #fff; }
+        input:focus, textarea:focus { outline: none; border-color: #0a5c9e; box-shadow: 0 0 0 3px rgba(10,92,158,0.1); }
+        textarea { resize: vertical; min-height: 60px; }
+        .section-title { font-weight: 700; margin: 20px 0 12px 0; padding-bottom: 6px; border-bottom: 2px solid #e2e8f0; color: #1e4a76; }
+        .item-row { background: #f8fafc; border-radius: 16px; padding: 12px; margin-bottom: 12px; border: 1px solid #e2edf7; }
+        .item-fields { display: grid; grid-template-columns: 3fr 1fr 1fr 1fr 0.3fr; gap: 10px; align-items: center; }
+        .item-fields input { padding: 8px 10px; font-size: 0.8rem; }
+        .remove-item { background: #fee2e2; border: none; border-radius: 30px; cursor: pointer; font-weight: bold; color: #b91c1c; padding: 6px; font-size: 1rem; transition: 0.2s; }
+        .remove-item:hover { background: #fecaca; }
+        .add-item-btn { background: #e6f0fa; border: 1px dashed #0a5c9e; border-radius: 40px; padding: 8px 16px; margin-top: 8px; cursor: pointer; font-weight: 600; color: #0a5c9e; width: 100%; transition: 0.2s; }
+        .add-item-btn:hover { background: #d4e4f5; }
+        .btn-group { display: flex; flex-wrap: wrap; gap: 12px; margin: 25px 0 15px; }
+        .btn { border: none; padding: 10px 20px; border-radius: 40px; font-weight: 700; cursor: pointer; font-size: 0.85rem; transition: 0.2s; background: #f1f5f9; color: #1e293b; }
+        .btn-primary { background: #0a5c9e; color: white; }
+        .btn-primary:hover { background: #084a7c; }
+        .btn-success { background: #1f6e43; color: white; }
+        .btn-success:hover { background: #185a38; }
+        .import-label { background: #4b6e8a; color: white; display: inline-block; padding: 10px 20px; border-radius: 40px; font-weight: 700; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
+        .import-label:hover { background: #2c4f6e; }
+        input[type="file"] { display: none; }
+        
+        /* 关键优化：预览区包装器本身无额外边距，合同内部严格控制间距，移除上方多余空白 */
+        .contract-wrapper { 
+            background: white; 
+            border-radius: 16px; 
+            padding: 16px 24px 24px 24px;  /* 减少顶部内边距，原28px改为16px */
+            font-family: 'Times New Roman', '宋体', SimSun, serif; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin: 0;
+        }
+        .sales-contract { 
+            font-size: 10.5pt;   /* 稍微紧凑字体，保证内容连贯 */
+            line-height: 1.4; 
+            color: #000;
+        }
+        /* 重新定义合同内部样式，消除所有可能导致顶部留白的边距 */
+        .contract-header { text-align: center; margin-bottom: 10px; margin-top: 0; padding-top: 0; }
+        .contract-title { font-size: 16pt; font-weight: bold; line-height: 1.3; }
+        .ref-row { display: flex; justify-content: space-between; border-bottom: 1px solid #aaa; padding-bottom: 5px; margin: 8px 0 10px 0; flex-wrap: wrap; }
+        .party-row { display: flex; gap: 20px; border: 1px solid #d4d4d4; padding: 10px 12px; margin: 12px 0 12px 0; background: #fefefe; }
+        .party { flex: 1; }
+        .party strong { display: block; border-bottom: 1px solid #aaa; margin-bottom: 6px; }
+        .goods-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 10pt; }
+        .goods-table th, .goods-table td { border: 1px solid #111; padding: 6px 5px; vertical-align: top; }
+        .goods-table th { background: #f0f2f5; text-align: center; }
+        .total-line { text-align: right; font-weight: bold; margin: 8px 0 12px 0; }
+        .clause { margin: 10px 0; display: flex; flex-wrap: wrap; align-items: baseline; }
+        .clause-label { width: 145px; font-weight: 700; font-size: 10pt; }
+        .clause-content { flex: 1; border-bottom: 1px dotted #ccc; font-size: 10pt; }
+        .sign-area { display: flex; justify-content: space-between; margin-top: 28px; margin-bottom: 10px; }
+        .print-hint { font-size: 9pt; text-align: center; margin-top: 12px; color: #6c757d; }
+        .status-msg { font-size: 12px; margin-top: 10px; color: #2c7a4d; text-align: center; background: #e6f7ec; padding: 6px; border-radius: 20px; transition: 0.2s; }
+        .error-msg { background: #fee2e2; color: #b91c1c; }
+        .lib-warning { background: #fff3cd; color: #856404; padding: 4px 10px; border-radius: 30px; font-size: 11px; margin-bottom: 12px; text-align: center; }
+        
+        /* 导出时强制重置任何额外外边距，保证PDF无顶部大片空白 */
+        @media print {
+            .editor-panel, .btn-group, .import-label, .print-hint { display: none; }
+            .preview-panel { padding: 0; background: white; }
+            .contract-wrapper { padding: 0.2in 0.2in 0.2in 0.2in !important; margin: 0 !important; }
+            .sales-contract { margin-top: 0 !important; padding-top: 0 !important; }
+            .contract-header { margin-top: 0 !important; padding-top: 0 !important; }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <!-- 左侧在线编辑区 -->
+    <div class="editor-panel">
+        <div class="card-title">✏️ 在线编辑合同 (支持Excel/PDF)</div>
+        <div id="libCheckMsg" class="lib-warning" style="display:none;">⚠️ 检测到外部库未加载，请刷新页面或检查网络</div>
+        <div class="form-group"><label>合同编号 NO.</label><input type="text" id="edit_contractNo" placeholder="W150501"></div>
+        <div class="form-group"><label>日期 DATE</label><input type="text" id="edit_contractDate" placeholder="May 15, 2024"></div>
+        <div class="form-group"><label>地点 PLACE</label><input type="text" id="edit_place" placeholder="TIANJIN, CHINA"></div>
+        <div class="form-group"><label>卖方 SELLER</label><textarea id="edit_seller" rows="2"></textarea></div>
+        <div class="form-group"><label>买方 BUYER</label><textarea id="edit_buyer" rows="2"></textarea></div>
+        <div class="form-group"><label>贸易术语 / 价格条款</label><input type="text" id="edit_tradeTerms" placeholder="CFR DAMMAM PORT, SAUDI ARABIA"></div>
+        <div class="section-title">📦 产品明细 (可增删/实时计算)</div>
+        <div id="itemsContainer"></div>
+        <button type="button" class="add-item-btn" id="addItemBtn">+ 添加产品明细</button>
+        <div class="section-title">📌 其他条款 (符合原合同)</div>
+        <div class="form-group"><label>包装 Packing</label><input type="text" id="edit_packing"></div>
+        <div class="form-group"><label>唛头 Shipping Marks</label><input type="text" id="edit_shippingMarks"></div>
+        <div class="form-group"><label>装运期 Time of Shipment</label><input type="text" id="edit_shipmentDate"></div>
+        <div class="form-group"><label>运输方式</label><input type="text" id="edit_modeTransport"></div>
+        <div class="form-group"><label>装运港</label><input type="text" id="edit_portLoading"></div>
+        <div class="form-group"><label>目的港</label><input type="text" id="edit_portDestination"></div>
+        <div class="form-group"><label>保险 Insurance</label><input type="text" id="edit_insurance"></div>
+        <div class="form-group"><label>付款方式</label><input type="text" id="edit_payment"></div>
+        <div class="form-group"><label>质量/数量异议</label><textarea id="edit_discrepancyClause" rows="2"></textarea></div>
+        <div class="form-group"><label>备注 Remarks</label><textarea id="edit_remarks" rows="2"></textarea></div>
+        <div class="btn-group">
+            <button class="btn btn-primary" id="refreshPreviewBtn">🔄 刷新预览 / 一键生成</button>
+            <button class="btn btn-success" id="exportPdfBtn">📑 导出PDF / 打印</button>
+            <label class="import-label" for="excelUpload">📂 导入Excel (更新合同)</label>
+            <input type="file" id="excelUpload" accept=".xlsx, .xls">
+        </div>
+        <div id="statusMsg" class="status-msg">✅ 功能正常 | 产品明细支持增删 | 已优化PDF留白</div>
+    </div>
+    <!-- 右侧预览区 -->
+    <div class="preview-panel">
+        <div class="card-title">📄 销售合同 SALES CONTRACT (专业外贸版)</div>
+        <div id="contractPreview" class="contract-wrapper"><div class="sales-contract" id="contractContent"></div></div>
+        <div class="print-hint">✅ 导出PDF时已优化上方留白，合同紧凑美观，可直接打印。</div>
+    </div>
+</div>
+
+<script>
+    // ---------- 数据模型 ----------
+    let items = [
+        { name: "CANNED MUSHROOMS PIECES & STEMS 24 TINS X 425G", qty: "1700", unitPrice: "7.80", amount: "13260.00" }
+    ];
+    
+    let baseFields = {
+        contractNo: "W150501", contractDate: "May 15, 2024", place: "TIANJIN, CHINA",
+        seller: "DESUN TRADING CO., LTD.",
+        buyer: "NEO GENERAL TRADING CO. P.O. BOX 99552, RYADH 22766, KSA TEL: 00966-1-4659220 FAX: 00966-1-4659213",
+        tradeTerms: "CFR DAMMAM PORT, SAUDI ARABIA", packing: "EXPORTED BROWN CARTON", shippingMarks: "RIYADH",
+        shipmentDate: "Not Later Than Apr.30, 2025", modeTransport: "BY VESSEL", portLoading: "SHANGHAI PORT, CHINA",
+        portDestination: "DAMMAM PORT, SAUDI ARABIA", insurance: "TO BE COVERED BY THE SELLER.",
+        payment: "T/T 15 DAYS FROM THE B/L DATE",
+        discrepancyClause: "In case of quality discrepancy, claim should be filed by the Buyer within 30 days after the arrival of the goods at port of destination, while for quantity discrepancy, claim should be filed by the Buyer within 15 days after the arrival of the goods at port of destination.",
+        remarks: "This Contract is in 2 copies effective since being signed/sealed by both parties."
+    };
+
+    function computeItemAmount(item) { 
+        let qty = parseFloat(item.qty) || 0; 
+        let price = parseFloat(item.unitPrice) || 0; 
+        return (qty * price).toFixed(2); 
+    }
+    
+    function updateItemsAmounts() { 
+        items.forEach(item => { item.amount = computeItemAmount(item); }); 
+    }
+    
+    function computeTotalAmount() { 
+        let total = 0; 
+        items.forEach(item => { total += parseFloat(computeItemAmount(item)); }); 
+        return total.toFixed(2); 
+    }
+    
+    function escapeHtml(str) { 
+        if(!str) return ''; 
+        return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); 
+    }
+
+    // 左侧产品明细渲染
+    function renderItemsEditor() {
+        const container = document.getElementById('itemsContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        items.forEach((item, idx) => {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'item-row';
+            rowDiv.innerHTML = `
+                <div class="item-fields">
+                    <input type="text" class="item-name" value="${escapeHtml(item.name)}" placeholder="品名规格" data-idx="${idx}" data-field="name">
+                    <input type="text" class="item-qty" value="${escapeHtml(item.qty)}" placeholder="数量(CARTONS)" data-idx="${idx}" data-field="qty">
+                    <input type="text" class="item-price" value="${escapeHtml(item.unitPrice)}" placeholder="单价(USD)" data-idx="${idx}" data-field="unitPrice">
+                    <input type="text" class="item-amount-display" value="${escapeHtml(computeItemAmount(item))}" placeholder="金额" readonly style="background:#f1f3f5;">
+                    <button class="remove-item" data-idx="${idx}">✖</button>
+                </div>
+            `;
+            container.appendChild(rowDiv);
+        });
+        document.querySelectorAll('.item-name, .item-qty, .item-price').forEach(inp => {
+            inp.removeEventListener('input', handleItemFieldChange);
+            inp.addEventListener('input', handleItemFieldChange);
+        });
+        document.querySelectorAll('.remove-item').forEach(btn => {
+            btn.removeEventListener('click', handleRemoveItemClick);
+            btn.addEventListener('click', handleRemoveItemClick);
+        });
+    }
+    
+    function handleItemFieldChange(e) {
+        const idx = e.target.getAttribute('data-idx');
+        const field = e.target.getAttribute('data-field');
+        if (idx !== null && items[parseInt(idx)]) {
+            items[parseInt(idx)][field] = e.target.value;
+            updateItemsAmounts();
+            renderItemsEditor();
+            syncAllToPreview();
+        }
+    }
+    
+    function handleRemoveItemClick(e) {
+        const idx = e.target.getAttribute('data-idx');
+        if (idx !== null && items[parseInt(idx)]) {
+            items.splice(parseInt(idx), 1);
+            if (items.length === 0) items.push({ name: "请填写产品", qty: "1", unitPrice: "0", amount: "0.00" });
+            renderItemsEditor();
+            syncAllToPreview();
+            showStatus("已删除产品明细");
+        }
+    }
+    
+    function syncBaseFieldsFromUI() {
+        baseFields.contractNo = document.getElementById('edit_contractNo').value;
+        baseFields.contractDate = document.getElementById('edit_contractDate').value;
+        baseFields.place = document.getElementById('edit_place').value;
+        baseFields.seller = document.getElementById('edit_seller').value;
+        baseFields.buyer = document.getElementById('edit_buyer').value;
+        baseFields.tradeTerms = document.getElementById('edit_tradeTerms').value;
+        baseFields.packing = document.getElementById('edit_packing').value;
+        baseFields.shippingMarks = document.getElementById('edit_shippingMarks').value;
+        baseFields.shipmentDate = document.getElementById('edit_shipmentDate').value;
+        baseFields.modeTransport = document.getElementById('edit_modeTransport').value;
+        baseFields.portLoading = document.getElementById('edit_portLoading').value;
+        baseFields.portDestination = document.getElementById('edit_portDestination').value;
+        baseFields.insurance = document.getElementById('edit_insurance').value;
+        baseFields.payment = document.getElementById('edit_payment').value;
+        baseFields.discrepancyClause = document.getElementById('edit_discrepancyClause').value;
+        baseFields.remarks = document.getElementById('edit_remarks').value;
+    }
+    
+    function fillUIFromBase() {
+        document.getElementById('edit_contractNo').value = baseFields.contractNo || '';
+        document.getElementById('edit_contractDate').value = baseFields.contractDate || '';
+        document.getElementById('edit_place').value = baseFields.place || '';
+        document.getElementById('edit_seller').value = baseFields.seller || '';
+        document.getElementById('edit_buyer').value = baseFields.buyer || '';
+        document.getElementById('edit_tradeTerms').value = baseFields.tradeTerms || '';
+        document.getElementById('edit_packing').value = baseFields.packing || '';
+        document.getElementById('edit_shippingMarks').value = baseFields.shippingMarks || '';
+        document.getElementById('edit_shipmentDate').value = baseFields.shipmentDate || '';
+        document.getElementById('edit_modeTransport').value = baseFields.modeTransport || '';
+        document.getElementById('edit_portLoading').value = baseFields.portLoading || '';
+        document.getElementById('edit_portDestination').value = baseFields.portDestination || '';
+        document.getElementById('edit_insurance').value = baseFields.insurance || '';
+        document.getElementById('edit_payment').value = baseFields.payment || '';
+        document.getElementById('edit_discrepancyClause').value = baseFields.discrepancyClause || '';
+        document.getElementById('edit_remarks').value = baseFields.remarks || '';
+    }
+    
+    // 金额转英文大写
+    function convertToEnglishCurrency(amountNum) {
+        let num = parseFloat(amountNum);
+        if (isNaN(num)) return "ZERO US DOLLARS";
+        let dollars = Math.floor(num);
+        let cents = Math.round((num - dollars) * 100);
+        const ones = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN'];
+        const tens = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY'];
+        function numToWords(n) { 
+            if (n === 0) return ''; 
+            if (n < 20) return ones[n] + ' '; 
+            return tens[Math.floor(n/10)] + ' ' + (n%10 !== 0 ? ones[n%10] + ' ' : ''); 
+        }
+        function convertSection(num) { 
+            let str = ''; 
+            if(num >= 1000){ str += numToWords(Math.floor(num/1000)) + 'THOUSAND '; num %= 1000; } 
+            if(num >= 100){ str += numToWords(Math.floor(num/100)) + 'HUNDRED '; num %= 100; } 
+            if(num > 0) str += numToWords(num); 
+            return str; 
+        }
+        let dollarPart = convertSection(dollars);
+        let dollarStr = dollarPart.trim() === '' ? 'ZERO' : dollarPart.trim();
+        let result = dollarStr + ' US DOLLARS';
+        if(cents > 0){ 
+            let centStr = cents < 20 ? ones[cents] : tens[Math.floor(cents/10)] + (cents%10 !== 0 ? ' ' + ones[cents%10] : ''); 
+            result += ' AND ' + centStr.trim() + ' CENTS'; 
+        }
+        return result.toUpperCase();
+    }
+    
+    // 核心渲染：合同预览，极简边距，无多余留白
+    function renderContractPreview() {
+        const total = computeTotalAmount();
+        const totalWords = convertToEnglishCurrency(total);
+        let itemsHtml = '';
+        items.forEach(item => {
+            const amt = computeItemAmount(item);
+            itemsHtml += `<tr>
+                <td>${escapeHtml(item.name || '')}</td>
+                <td>${escapeHtml(item.qty || '0')} CARTONS</td>
+                <td>USD ${escapeHtml(item.unitPrice || '0')}</td>
+                <td>USD ${amt}</td>
+            </tr>`;
+        });
+        if(items.length === 0) itemsHtml = '<tr><td colspan="4">暂无产品，请添加</td></tr>';
+        
+        const html = `
+            <div class="contract-header">
+                <div class="contract-title">销售合同</div>
+                <div class="contract-title" style="font-size:14pt;">SALES CONTRACT</div>
+            </div>
+            <div class="ref-row">
+                <span><strong>编号 NO.:</strong> ${escapeHtml(baseFields.contractNo)}</span>
+                <span><strong>日期 DATE:</strong> ${escapeHtml(baseFields.contractDate)}</span>
+                <span><strong>地点 PLACE:</strong> ${escapeHtml(baseFields.place)}</span>
+            </div>
+            <div class="party-row">
+                <div class="party"><strong>卖方 SELLER:</strong><br>${escapeHtml(baseFields.seller).replace(/\n/g,'<br>')}</div>
+                <div class="party"><strong>买方 BUYER:</strong><br>${escapeHtml(baseFields.buyer).replace(/\n/g,'<br>')}</div>
+            </div>
+            <p style="margin:6px 0 4px;">买卖双方同意以下条款达成交易：<br>This contract is made by and agreed between the BUYER and SELLER.</p>
+            <table class="goods-table">
+                <thead><tr><th>1. 品名及规格</th><th>2. 数量</th><th>3. 单价</th><th>4. 金额</th></tr></thead>
+                <tbody>${itemsHtml}</tbody>
+            </table>
+            <div class="total-line"><strong>Total Amount:</strong> USD ${total}</div>
+            <div class="clause"><div class="clause-label">5. 总值 Total Value:</div><div class="clause-content"><strong>${totalWords}</strong></div></div>
+            <div class="clause"><div class="clause-label">贸易术语 Trade Terms:</div><div class="clause-content">${escapeHtml(baseFields.tradeTerms)}</div></div>
+            <div class="clause"><div class="clause-label">6. 包装 Packing:</div><div class="clause-content">${escapeHtml(baseFields.packing)}</div></div>
+            <div class="clause"><div class="clause-label">7. 唛头 Shipping Marks:</div><div class="clause-content">${escapeHtml(baseFields.shippingMarks)}</div></div>
+            <div class="clause"><div class="clause-label">8. 装运期 Time of Shipment:</div><div class="clause-content">${escapeHtml(baseFields.shipmentDate)} &nbsp;&nbsp;运输方式: ${escapeHtml(baseFields.modeTransport)}</div></div>
+            <div class="clause"><div class="clause-label">9. 装运港 Port of Loading:</div><div class="clause-content">${escapeHtml(baseFields.portLoading)} → 目的地: ${escapeHtml(baseFields.portDestination)}</div></div>
+            <div class="clause"><div class="clause-label">10. 保险 Insurance:</div><div class="clause-content">${escapeHtml(baseFields.insurance)}</div></div>
+            <div class="clause"><div class="clause-label">11. 付款方式 Terms of Payment:</div><div class="clause-content">${escapeHtml(baseFields.payment)}</div></div>
+            <div class="clause"><div class="clause-label">12. 质量/数量异议:</div><div class="clause-content">${escapeHtml(baseFields.discrepancyClause)}</div></div>
+            <div class="clause"><div class="clause-label">13. 备注 Remarks:</div><div class="clause-content">${escapeHtml(baseFields.remarks)}</div></div>
+            <div class="sign-area">
+                <div><strong>The Buyer</strong><br><br>${escapeHtml(baseFields.buyer.substring(0, 60))}...<br>(signature)</div>
+                <div><strong>The Seller</strong><br><br>${escapeHtml(baseFields.seller.substring(0, 60))}...<br>(signature)</div>
+            </div>
+            <hr style="margin: 10px 0 5px;">
+            <div style="font-size:9pt; text-align:center;">This Contract is in 2 copies effective since being signed/sealed by both parties.</div>
+        `;
+        document.getElementById('contractContent').innerHTML = html;
+    }
+    
+    function syncAllToPreview() { 
+        syncBaseFieldsFromUI(); 
+        updateItemsAmounts(); 
+        renderContractPreview(); 
+        showStatus("合同已刷新 / 生成成功"); 
+    }
+    
+    function showStatus(msg, isError = false) { 
+        const el = document.getElementById('statusMsg'); 
+        if(el) { 
+            el.innerHTML = `✅ ${msg}`; 
+            if(isError) { el.style.background = '#fee2e2'; el.style.color = '#b91c1c'; }
+            else { el.style.background = '#e6f7ec'; el.style.color = '#2c7a4d'; }
+            setTimeout(() => { 
+                if(el) { 
+                    el.innerHTML = `✅ 功能正常 | 产品明细支持增删 | 已优化PDF留白`; 
+                    el.style.background = '#e6f7ec'; 
+                    el.style.color = '#2c7a4d';
+                } 
+            }, 2800); 
+        } 
+    }
+    
+    // 导入Excel
+    function importExcel(file) {
+        if (typeof XLSX === 'undefined') {
+            alert("Excel解析库未加载，请刷新页面后重试。");
+            showStatus("Excel库加载失败，请刷新页面", true);
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+                if (!rows || rows.length < 2) throw new Error("文件内容为空");
+                let tempBase = { ...baseFields };
+                let newItems = [];
+                for (let i = 0; i < rows.length; i++) {
+                    let row = rows[i];
+                    if (!row || row.length < 2) continue;
+                    let fieldName = (row[0] !== undefined && row[0] !== null) ? String(row[0]).trim() : "";
+                    let fieldValue = (row[1] !== undefined && row[1] !== null) ? String(row[1]).trim() : "";
+                    if (fieldName.includes("合同编号")) tempBase.contractNo = fieldValue;
+                    if (fieldName.includes("合同日期")) tempBase.contractDate = fieldValue;
+                    if (fieldName.includes("地点")) tempBase.place = fieldValue;
+                    if (fieldName.includes("卖方")) tempBase.seller = fieldValue;
+                    if (fieldName.includes("买方")) tempBase.buyer = fieldValue;
+                    if (fieldName.includes("贸易术语")) tempBase.tradeTerms = fieldValue;
+                    if (fieldName.includes("包装")) tempBase.packing = fieldValue;
+                    if (fieldName.includes("唛头")) tempBase.shippingMarks = fieldValue;
+                    if (fieldName.includes("装运期")) tempBase.shipmentDate = fieldValue;
+                    if (fieldName.includes("运输方式")) tempBase.modeTransport = fieldValue;
+                    if (fieldName.includes("装运港")) tempBase.portLoading = fieldValue;
+                    if (fieldName.includes("目的港")) tempBase.portDestination = fieldValue;
+                    if (fieldName.includes("保险")) tempBase.insurance = fieldValue;
+                    if (fieldName.includes("付款方式")) tempBase.payment = fieldValue;
+                    if (fieldName.includes("质量异议") || fieldName.includes("数量异议")) tempBase.discrepancyClause = fieldValue;
+                    if (fieldName.includes("备注")) tempBase.remarks = fieldValue;
+                    if (fieldName.includes("品名") && fieldValue) {
+                        let idx = 0;
+                        let match = fieldName.match(/\d+/);
+                        if (match) idx = parseInt(match[0]) - 1;
+                        if (!newItems[idx]) newItems[idx] = { name: "", qty: "0", unitPrice: "0", amount: "0.00" };
+                        newItems[idx].name = fieldValue;
+                    }
+                    if (fieldName.includes("数量") && fieldValue && !fieldName.includes("异议")) {
+                        let match = fieldName.match(/\d+/);
+                        let idx = match ? parseInt(match[0]) - 1 : 0;
+                        if (idx >= 0 && newItems[idx]) newItems[idx].qty = fieldValue;
+                        else if (newItems.length === 0) { newItems[0] = { name: "产品", qty: fieldValue, unitPrice: "0", amount: "0.00" }; }
+                    }
+                    if (fieldName.includes("单价") && fieldValue) {
+                        let match = fieldName.match(/\d+/);
+                        let idx = match ? parseInt(match[0]) - 1 : 0;
+                        if (idx >= 0 && newItems[idx]) newItems[idx].unitPrice = fieldValue;
+                        else if (newItems.length === 0) { newItems[0] = { name: "产品", qty: "0", unitPrice: fieldValue, amount: "0.00" }; }
+                    }
+                }
+                if (newItems.length > 0 && newItems[0] && newItems[0].name) items = newItems;
+                else if (newItems.length === 0 && items.length === 0) items.push({ name: "导入产品", qty: "100", unitPrice: "5.00", amount: "500.00" });
+                Object.assign(baseFields, tempBase);
+                fillUIFromBase();
+                renderItemsEditor();
+                syncAllToPreview();
+                showStatus("Excel导入成功，合同已更新");
+            } catch(err) { 
+                console.error(err);
+                alert("导入失败: " + err.message); 
+                showStatus("导入失败，请检查文件格式", true); 
+            }
+        };
+        reader.onerror = () => { alert("文件读取失败"); showStatus("文件读取失败", true); };
+        reader.readAsArrayBuffer(file);
+    }
+    
+    // PDF导出：设置边距为极小，确保顶部不留白
+    function exportPDF() {
+        if (typeof html2pdf === 'undefined') {
+            alert("PDF库未加载，请刷新页面后重试。\n您也可以使用浏览器打印功能(Ctrl+P)来保存PDF。");
+            showStatus("PDF库加载失败，请刷新页面或使用浏览器打印", true);
+            return;
+        }
+        const element = document.getElementById('contractPreview');
+        if (!element) { alert("预览区域不存在"); return; }
+        // 关键优化: 设置上边距为0.1英寸，左右下边距适中，移除默认大留白
+        const opt = { 
+            margin: [0.1, 0.4, 0.3, 0.4],   // 上边距0.1in，极大减少顶部空白
+            filename: `Sales_Contract_${baseFields.contractNo || 'document'}.pdf`, 
+            image: { type: 'jpeg', quality: 0.98 }, 
+            html2canvas: { scale: 2, letterRendering: true, useCORS: false, logging: false }, 
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } 
+        };
+        html2pdf().set(opt).from(element).save().then(() => { 
+            showStatus("PDF导出成功 (留白已优化)"); 
+        }).catch(err => { 
+            console.error(err); 
+            alert("PDF导出失败，可尝试浏览器打印(Ctrl+P)生成PDF"); 
+            showStatus("PDF导出失败，请使用浏览器打印", true); 
+        });
+    }
+    
+    function addNewItem() { 
+        items.push({ name: "新产品规格 (可编辑)", qty: "500", unitPrice: "6.50", amount: "3250.00" }); 
+        renderItemsEditor(); 
+        syncAllToPreview(); 
+        showStatus("已添加新产品行"); 
+    }
+    
+    // 初始化库检测
+    window.addEventListener('DOMContentLoaded', () => {
+        let hasIssues = false;
+        if (typeof XLSX === 'undefined') { console.warn("XLSX missing"); hasIssues = true; }
+        if (typeof html2pdf === 'undefined') { console.warn("html2pdf missing"); hasIssues = true; }
+        if (hasIssues) {
+            const warnDiv = document.getElementById('libCheckMsg');
+            if(warnDiv) warnDiv.style.display = 'block';
+        }
+        fillUIFromBase();
+        renderItemsEditor();
+        syncAllToPreview();
+    });
+    
+    document.getElementById('refreshPreviewBtn').addEventListener('click', syncAllToPreview);
+    document.getElementById('exportPdfBtn').addEventListener('click', exportPDF);
+    document.getElementById('addItemBtn').addEventListener('click', addNewItem);
+    const excelUpload = document.getElementById('excelUpload');
+    excelUpload.addEventListener('change', (e) => { if(e.target.files.length) importExcel(e.target.files[0]); excelUpload.value = ''; });
+</script>
+</body>
+</html>
