@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>国际采购合同专家 | 多模板PO生成器</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #f4f7fc;
+            font-family: 'Inter', sans-serif;
+            color: #1a2c3e;
+            padding: 40px 32px;
+        }
+        .app-container { max-width: 1400px; margin: 0 auto; }
+        .brand-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+            border-bottom: 2px solid rgba(0, 70, 100, 0.15);
+            padding-bottom: 16px;
+        }
+        .title-section h1 {
+            font-weight: 600;
+            font-size: 1.9rem;
+            letter-spacing: -0.3px;
+            background: linear-gradient(135deg, #1F4E6C, #2C7A5E);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+        .history-tools {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            background: white;
+            padding: 8px 20px;
+            border-radius: 60px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+        .history-selector {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .history-selector label {
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: #1e4663;
+        }
+        select#historySelect {
+            padding: 8px 28px 8px 14px;
+            border-radius: 40px;
+            border: 1px solid #cddfe7;
+            background: white;
+            font-family: 'Inter', monospace;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .btn-icon {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #2c7a5e;
+            padding: 6px 8px;
+            border-radius: 30px;
+            transition: 0.2s;
+        }
+        .btn-icon:hover { background: #eef2f5; }
+        
+        .param-card {
+            background: #ffffff;
+            border-radius: 28px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.08);
+            padding: 24px 28px;
+            border: 1px solid #eef2f8;
+            margin-bottom: 28px;
+        }
+        .param-card h3 {
+            font-weight: 600;
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #1f4e6c;
+            border-left: 4px solid #2c7a5e;
+            padding-left: 16px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px 24px;
+            margin-bottom: 0;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .input-group label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #5b7a99;
+        }
+        .input-group input, .input-group textarea {
+            border: 1px solid #e2e9f0;
+            border-radius: 16px;
+            padding: 10px 14px;
+            font-family: 'Inter', monospace;
+            font-size: 0.85rem;
+            transition: 0.2s;
+            background: #fefefe;
+        }
+        .full-width { grid-column: span 2; }
+        
+        .items-editor-wrapper {
+            background: #ffffff;
+            border-radius: 28px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.08);
+            padding: 24px 28px;
+            border: 1px solid #eef2f8;
+            margin-bottom: 28px;
+        }
+        .items-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .left-tools {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .template-switch-group {
+            display: flex;
+            gap: 8px;
+            background: #f0f4f9;
+            padding: 4px 12px;
+            border-radius: 48px;
+        }
+        .template-switch-btn {
+            background: transparent;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 32px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #2c5a74;
+        }
+        .template-switch-btn.active {
+            background: #1f4e6c;
+            color: white;
+        }
+        .btn-add {
+            background: #eef2fa;
+            border: 1px dashed #9bb7d0;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        /* 表格样式 - 确保列顺序正确 */
+        .mini-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+            background: #fafcff;
+            border-radius: 20px;
+            overflow-x: auto;
+            display: table;
+            table-layout: fixed;
+        }
+        .mini-table th, .mini-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e9edf2;
+            text-align: left;
+            vertical-align: middle;
+            word-break: break-word;
+        }
+        .mini-table input {
+            width: 100%;
+            padding: 8px 8px;
+            border: 1px solid #dee5ec;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            box-sizing: border-box;
+        }
+        .delete-row-btn {
+            background: none;
+            border: none;
+            color: #b91c1c;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 4px 6px;
+            border-radius: 20px;
+            transition: 0.2s;
+        }
+        .delete-row-btn:hover {
+            background: #ffe6e6;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .primary-btn {
+            background: #1f4e6c;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .secondary-btn {
+            background: white;
+            border: 1px solid #cbdde9;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .preview-card {
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+        .preview-header {
+            background: #fefefe;
+            padding: 18px 28px 0 28px;
+            display: flex;
+            justify-content: flex-end;
+            border-bottom: 1px solid #eef2f0;
+        }
+        .contract-preview {
+            padding: 28px 32px 40px 32px;
+            background: #fff;
+            max-height: 75vh;
+            overflow-y: auto;
+        }
+        @media print {
+            body { background: white; padding: 0; }
+            .param-card, .items-editor-wrapper, .history-tools, .action-buttons, .preview-header button { display: none !important; }
+            .contract-preview { padding: 0; max-height: none; }
+        }
+        .po-doc { font-family: 'Inter', sans-serif; }
+        .po-company-header { text-align: center; margin-bottom: 32px; border-bottom: 2px solid #eef2f5; padding-bottom: 20px; }
+        .po-company-name { font-size: 1.8rem; font-weight: 700; color: #000000; }
+        .po-address, .po-contact, .po-vat-email { font-size: 0.8rem; color: #000000; margin-top: 4px; }
+        .po-main-title { font-size: 2rem; font-weight: 800; color: #000000; background: #f0f6fa; display: inline-block; padding: 6px 28px; border-radius: 60px; margin-bottom: 12px; }
+        .po-order-meta { display: flex; justify-content: space-between; background: #fafdff; padding: 10px 20px; border-radius: 28px; border: 1px solid #e9edf2; margin: 15px 0 20px; }
+        .po-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.75rem; border: 1px solid #e2e8f0; }
+        .po-table th { background: #f1f6fd; padding: 12px 8px; text-align: left; }
+        .po-table td { padding: 10px 8px; border-bottom: 1px solid #eef2f8; }
+        .totals { text-align: right; padding: 16px 24px; background: #fafdff; border-radius: 24px; margin-top: 20px; }
+        .clause { font-size: 0.7rem; color: #4a627a; margin-top: 28px; border-top: 1px dashed #cbdde9; padding-top: 20px; }
+        .sign-row { margin-top: 32px; display: flex; justify-content: space-between; }
+        .info-tip { font-size: 0.7rem; color: #6c8eae; margin-top: 12px; }
+        @media (max-width: 760px) { .form-grid { grid-template-columns: 1fr; } .full-width { grid-column: span 1; } }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="brand-bar">
+        <div class="title-section"><h1><i class="fas fa-file-signature"></i> 国际采购合同专家 · 多模板PO</h1></div>
+        <div class="history-tools">
+            <div class="history-selector">
+                <label><i class="fas fa-history"></i> 历史单据</label>
+                <select id="historySelect"><option value="">-- 选择历史记录 --</option></select>
+                <button class="btn-icon" id="deleteHistoryBtn"><i class="fas fa-trash-alt"></i></button>
+            </div>
+            <button class="btn-icon" id="printPreviewBtn"><i class="fas fa-print"></i> 打印</button>
+        </div>
+    </div>
+    
+    <!-- 关键参数配置 -->
+    <div class="param-card">
+        <h3><i class="fas fa-sliders-h"></i> 关键参数配置</h3>
+        <div class="form-grid">
+            <div class="input-group"><label>PO订单号</label><input type="text" id="poNumber" value="PO19A02001"></div>
+            <div class="input-group"><label>订单日期</label><input type="date" id="orderDate" value="2019-11-06"></div>
+            <div class="input-group full-width"><label>公司名称</label><input type="text" id="buyerName" value="Shandong International Trading Co.,ltd"></div>
+            <div class="input-group full-width"><label>公司地址</label><input type="text" id="buyerAddress" value="Houjie Street, 21548 New City, Postcode 262123, Shandong, China"></div>
+            <div class="input-group"><label>电话</label><input type="text" id="buyerTel" value="+86 536-880xxxx"></div>
+            <div class="input-group"><label>传真</label><input type="text" id="buyerFax" value="+86 536-866xxxx"></div>
+            <div class="input-group"><label>VAT号码</label><input type="text" id="vatNumber" value="3707xxxxxx"></div>
+            <div class="input-group"><label>邮箱/网址</label><input type="text" id="webEmail" value="name@domainname.com | www.domainname.com"></div>
+            <div class="input-group"><label>税率 (%)</label><input type="number" id="taxRate" value="0" step="0.5"></div>
+            <div class="input-group full-width"><label>特殊条款</label><textarea rows="2" id="specialNotes">Please send tracking number, weight & volume. All items must conform to European Standard.</textarea></div>
+        </div>
+        <div class="action-buttons">
+            <button class="primary-btn" id="generateBtn"><i class="fas fa-magic"></i> 生成采购订单/PO</button>
+            <button class="secondary-btn" id="importTxtBtn"><i class="fas fa-upload"></i> 导入TXT模板</button>
+            <button class="secondary-btn" id="downloadTemplateBtn"><i class="fas fa-download"></i> 下载模板(.txt)</button>
+        </div>
+        <div class="info-tip"><i class="fas fa-info-circle"></i> 模板格式为纯文本，可用记事本编辑。支持导入导出自定义模板（标准模板字段）。历史记录自动保存。</div>
+    </div>
+    
+    <!-- 产品明细编辑表格（带添加/删除行，列顺序严格遵循模板） -->
+    <div class="items-editor-wrapper">
+        <div class="items-header">
+            <div class="left-tools">
+                <span><i class="fas fa-list-ul"></i> 产品明细编辑 (支持添加/删除行)</span>
+                <div class="template-switch-group" id="templateSwitchGroup">
+                    <button data-template="classic" class="template-switch-btn active">标准模板</button>
+                    <button data-template="minimal" class="template-switch-btn">精简模板</button>
+                    <button data-template="extended" class="template-switch-btn">扩展模板</button>
+                </div>
+            </div>
+            <button type="button" class="btn-add" id="addRowBtn"><i class="fas fa-plus"></i> 添加产品</button>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="mini-table" id="itemsEditorTable">
+                <thead id="editorHeader"></thead>
+                <tbody id="editorTbody"></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- 采购订单预览 -->
+    <div class="preview-card">
+        <div class="preview-header"><button id="printInnerBtn"><i class="fas fa-print"></i> 打印此合同</button></div>
+        <div class="contract-preview" id="contractPreviewContainer"><div class="po-doc" style="text-align:center;">请编辑产品明细并点击「生成采购订单/PO」</div></div>
+    </div>
+</div>
+
+<script>
+    // 日期格式化：月份英文缩写
+    function formatOrderDate(dateString) {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return dateString;
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+    }
+
+    // ================= 模板定义（列顺序严格固定） =================
+    const TEMPLATES = {
+        classic: {
+            name: "classic",
+            cols: [
+                { key: "partNo", label: "Part Number/Product Name", type: "text", default: "NEW-001" },
+                { key: "desc", label: "Part Description", type: "text", default: "Standard Component" },
+                { key: "dueDate", label: "Due Date", type: "date", default: new Date().toISOString().slice(0,10) },
+                { key: "qty", label: "Qty", type: "number", default: 1 },
+                { key: "price", label: "Unit Price (USD)", type: "number", default: 0 },
+                { key: "disc", label: "Discount (%)", type: "number", default: 0 }
+            ],
+            sampleItems: [
+                { partNo: "QA210112XX", desc: "Material Sizes, type A", dueDate: "2019-11-22", qty: 100, price: 98.00, disc: 5.00 },
+                { partNo: "QA210122XX", desc: "Material Sizes, type B", dueDate: "2019-11-22", qty: 100, price: 45.00, disc: 5.00 }
+            ]
+        },
+        minimal: {
+            name: "minimal",
+            cols: [
+                { key: "partNo", label: "Part Number/Product Name", type: "text", default: "MIN-001" },
+                { key: "desc", label: "Description", type: "text", default: "Basic Item" },
+                { key: "qty", label: "Qty", type: "number", default: 1 },
+                { key: "price", label: "Unit Price (USD)", type: "number", default: 0 }
+            ],
+            sampleItems: [
+                { partNo: "MP-101", desc: "Precision Bushing", qty: 50, price: 25.00 },
+                { partNo: "MP-102", desc: "Steel Spacer", qty: 30, price: 32.50 }
+            ]
+        },
+        extended: {
+            name: "extended",
+            cols: [
+                { key: "partNo", label: "Part Number/Product Name", type: "text", default: "EXT-001" },
+                { key: "desc", label: "Description", type: "text", default: "Advanced Part" },
+                { key: "manufacturer", label: "Manufacturer", type: "text", default: "OEM Corp" },
+                { key: "leadTime", label: "Lead Time (days)", type: "number", default: 14 },
+                { key: "dueDate", label: "Due Date", type: "date", default: new Date().toISOString().slice(0,10) },
+                { key: "qty", label: "Qty", type: "number", default: 1 },
+                { key: "price", label: "Unit Price (USD)", type: "number", default: 0 },
+                { key: "disc", label: "Discount (%)", type: "number", default: 0 }
+            ],
+            sampleItems: [
+                { partNo: "EXT-101", desc: "Hydraulic Piston", manufacturer: "Bosch Rexroth", leadTime: 21, dueDate: "2025-05-10", qty: 10, price: 245.00, disc: 3 },
+                { partNo: "EXT-102", desc: "Servo Motor", manufacturer: "Siemens", leadTime: 28, dueDate: "2025-05-20", qty: 5, price: 1290.00, disc: 5 }
+            ]
+        }
+    };
+    
+    let currentTemplate = "classic";
+    let currentLineItems = [];
+    let historyList = [];
+    const STORAGE_KEY = "po_multi_template_history";
+
+    const editorHeader = document.getElementById("editorHeader");
+    const editorTbody = document.getElementById("editorTbody");
+    const generateBtn = document.getElementById("generateBtn");
+    const addRowBtn = document.getElementById("addRowBtn");
+    const historySelect = document.getElementById("historySelect");
+    const deleteHistoryBtn = document.getElementById("deleteHistoryBtn");
+    const printPreviewBtn = document.getElementById("printPreviewBtn");
+    const printInnerBtn = document.getElementById("printInnerBtn");
+    const importTxtBtn = document.getElementById("importTxtBtn");
+    const downloadTemplateBtn = document.getElementById("downloadTemplateBtn");
+    const contractPreview = document.getElementById("contractPreviewContainer");
+
+    function getDefaultItemsForTemplate(tplName) {
+        const tpl = TEMPLATES[tplName];
+        return tpl.sampleItems.map(item => ({ ...item }));
+    }
+    
+    // 核心修复：确保表格列顺序严格与模板cols一致
+    function renderEditor() {
+        const tpl = TEMPLATES[currentTemplate];
+        if (!tpl) return;
+        const dataCols = tpl.cols;  // 顺序已经定义好
+        
+        // 生成表头：数据列 + 操作列
+        let headerHtml = `<tr>`;
+        dataCols.forEach(col => {
+            headerHtml += `<th>${col.label}</th>`;
+        });
+        headerHtml += `<th style="width:60px">操作</th></tr>`;
+        editorHeader.innerHTML = headerHtml;
+        
+        // 生成数据行
+        editorTbody.innerHTML = "";
+        currentLineItems.forEach((item, idx) => {
+            let rowHtml = `<tr>`;
+            // 按照 dataCols 的顺序输出每个字段的输入框
+            dataCols.forEach(col => {
+                let value = item[col.key] !== undefined ? item[col.key] : (col.default || "");
+                if (col.type === "date" && !value) value = new Date().toISOString().slice(0,10);
+                // 特殊处理：如果是数字类型且值为空，设为0
+                if (col.type === "number" && (value === "" || value === undefined)) value = 0;
+                rowHtml += `<td><input type="${col.type === 'number' ? 'number' : (col.type === 'date' ? 'date' : 'text')}" 
+                                         value="${escapeHtml(String(value))}" 
+                                         data-idx="${idx}" 
+                                         data-field="${col.key}"
+                                         step="${col.type === 'number' ? 'any' : ''}"
+                                         class="editor-input"></td>`;
+            });
+            // 操作按钮列
+            rowHtml += `<td style="text-align:center"><button class="delete-row-btn" data-idx="${idx}"><i class="fas fa-trash-alt"></i></button></td>`;
+            rowHtml += `</tr>`;
+            editorTbody.insertAdjacentHTML('beforeend', rowHtml);
+        });
+        
+        // 绑定输入框事件和删除按钮事件（使用事件委托）
+        document.querySelectorAll('#editorTbody .editor-input').forEach(input => {
+            input.removeEventListener('change', handleInputChange);
+            input.addEventListener('change', handleInputChange);
+        });
+        document.querySelectorAll('#editorTbody .delete-row-btn').forEach(btn => {
+            btn.removeEventListener('click', handleDeleteClick);
+            btn.addEventListener('click', handleDeleteClick);
+        });
+        
+        // 动态调整列宽：使数据列均分，操作列固定宽度
+        const colCount = dataCols.length + 1;
+        const dataPercent = (100 / colCount).toFixed(2);
+        let styleText = `#itemsEditorTable th, #itemsEditorTable td { box-sizing: border-box; }`;
+        styleText += `#itemsEditorTable th:not(:last-child), #itemsEditorTable td:not(:last-child) { width: ${dataPercent}%; }`;
+        styleText += `#itemsEditorTable th:last-child, #itemsEditorTable td:last-child { width: 60px; text-align: center; }`;
+        let styleEl = document.getElementById('dynamic-col-width');
+        if (styleEl) styleEl.remove();
+        styleEl = document.createElement('style');
+        styleEl.id = 'dynamic-col-width';
+        styleEl.textContent = styleText;
+        document.head.appendChild(styleEl);
+    }
+    
+    function handleInputChange(e) {
+        const input = e.target;
+        const idx = parseInt(input.getAttribute('data-idx'));
+        const field = input.getAttribute('data-field');
+        let newVal = input.value;
+        const colDef = TEMPLATES[currentTemplate].cols.find(c => c.key === field);
+        if (colDef && colDef.type === 'number') newVal = parseFloat(newVal) || 0;
+        if (currentLineItems[idx]) {
+            currentLineItems[idx][field] = newVal;
+        }
+        // 实时刷新预览
+        const state = collectFormState();
+        contractPreview.innerHTML = renderContractHTML(state);
+    }
+    
+    function handleDeleteClick(e) {
+        const btn = e.currentTarget;
+        const idx = parseInt(btn.getAttribute('data-idx'));
+        if (!isNaN(idx)) {
+            currentLineItems.splice(idx, 1);
+            renderEditor();
+            const state = collectFormState();
+            contractPreview.innerHTML = renderContractHTML(state);
+        }
+    }
+    
+    function switchTemplate(tplName) {
+        currentTemplate = tplName;
+        currentLineItems = getDefaultItemsForTemplate(tplName);
+        renderEditor();
+        const state = collectFormState();
+        contractPreview.innerHTML = renderContractHTML(state);
+        document.querySelectorAll(".template-switch-btn").forEach(btn => {
+            if (btn.getAttribute("data-template") === tplName) btn.classList.add("active");
+            else btn.classList.remove("active");
+        });
+    }
+    
+    function collectFormState() {
+        return {
+            template: currentTemplate,
+            poNumber: document.getElementById("poNumber").value,
+            orderDate: document.getElementById("orderDate").value,
+            buyerName: document.getElementById("buyerName").value,
+            buyerAddress: document.getElementById("buyerAddress").value,
+            buyerTel: document.getElementById("buyerTel").value,
+            buyerFax: document.getElementById("buyerFax").value,
+            vatNumber: document.getElementById("vatNumber").value,
+            webEmail: document.getElementById("webEmail").value,
+            taxRate: parseFloat(document.getElementById("taxRate").value) || 0,
+            specialNotes: document.getElementById("specialNotes").value,
+            lineItems: JSON.parse(JSON.stringify(currentLineItems))
+        };
+    }
+    function restoreFormState(state) {
+        if (!state) return;
+        document.getElementById("poNumber").value = state.poNumber || "";
+        document.getElementById("orderDate").value = state.orderDate || "";
+        document.getElementById("buyerName").value = state.buyerName || "";
+        document.getElementById("buyerAddress").value = state.buyerAddress || "";
+        document.getElementById("buyerTel").value = state.buyerTel || "";
+        document.getElementById("buyerFax").value = state.buyerFax || "";
+        document.getElementById("vatNumber").value = state.vatNumber || "";
+        document.getElementById("webEmail").value = state.webEmail || "";
+        document.getElementById("taxRate").value = state.taxRate || 0;
+        document.getElementById("specialNotes").value = state.specialNotes || "";
+        if (state.template && TEMPLATES[state.template]) {
+            currentTemplate = state.template;
+            document.querySelectorAll(".template-switch-btn").forEach(btn => {
+                if (btn.getAttribute("data-template") === currentTemplate) btn.classList.add("active");
+                else btn.classList.remove("active");
+            });
+        } else { currentTemplate = "classic"; }
+        if (state.lineItems && Array.isArray(state.lineItems)) {
+            currentLineItems = state.lineItems;
+        } else {
+            currentLineItems = getDefaultItemsForTemplate(currentTemplate);
+        }
+        renderEditor();
+    }
+    
+    function computeExtended(item) {
+        const qty = item.qty || 0;
+        const price = item.price || 0;
+        const disc = item.disc || 0;
+        return qty * price * (1 - disc/100);
+    }
+    
+    function validateLineItems(items) {
+        if (!items || items.length === 0) return { valid: false, message: "请至少添加一条产品明细。" };
+        for (let i = 0; i < items.length; i++) {
+            const it = items[i];
+            if (it.qty === undefined || it.qty === null || it.qty <= 0) return { valid: false, message: `第 ${i+1} 行产品「数量」未填写或无效，请填写大于0的数量。` };
+            if (it.price === undefined || it.price === null || it.price <= 0) return { valid: false, message: `第 ${i+1} 行产品「单价」未填写或无效，请填写大于0的单价。` };
+        }
+        return { valid: true };
+    }
+    
+    function renderContractHTML(state) {
+        const tpl = TEMPLATES[state.template || currentTemplate] || TEMPLATES.classic;
+        const items = state.lineItems;
+        let subtotal = 0;
+        const extendedVals = items.map(it => { const ext = computeExtended(it); subtotal += ext; return ext; });
+        const taxAmount = subtotal * (state.taxRate / 100);
+        const totalWithTax = subtotal + taxAmount;
+        const formattedOrderDate = formatOrderDate(state.orderDate);
+        const dataCols = tpl.cols;
+        let tableHead = `<td>${dataCols.map(c => `<th>${c.label}</th>`).join('')}<th>Extended Price (USD)</th>筹`;
+        let tableBody = "";
+        items.forEach((it, idx) => {
+            let row = "<tr>";
+            dataCols.forEach(col => {
+                let val = it[col.key] !== undefined ? it[col.key] : "";
+                const isNumeric = (col.key === "qty" || col.key === "price" || col.key === "disc");
+                const align = isNumeric ? ' style="text-align:right;"' : '';
+                row += `<td${align}>${escapeHtml(String(val))}</td>`;
+            });
+            row += `<td style="text-align:right">$${extendedVals[idx].toFixed(2)}</td>`;
+            row += `</tr>`;
+            tableBody += row;
+        });
+        return `
+            <div class="po-doc">
+                <div class="po-company-header">
+                    <div class="po-company-name">${escapeHtml(state.buyerName)}</div>
+                    <div class="po-address">${escapeHtml(state.buyerAddress)}</div>
+                    <div class="po-contact">Tel: ${escapeHtml(state.buyerTel)} &nbsp; Fax: ${escapeHtml(state.buyerFax)}</div>
+                    <div class="po-vat-email">VAT: ${escapeHtml(state.vatNumber)} &nbsp; ${escapeHtml(state.webEmail)}</div>
+                </div>
+                <div style="text-align:center;">
+                    <div class="po-main-title">PURCHASE ORDER</div>
+                    <div class="po-order-meta">
+                        <span><strong>PO Number:</strong> ${escapeHtml(state.poNumber)}</span>
+                        <span><strong>Order Date:</strong> ${escapeHtml(formattedOrderDate)}</span>
+                    </div>
+                </div>
+                <table class="po-table"><thead>${tableHead}</thead><tbody>${tableBody || '<tr><td colspan="10">暂无产品明细</td>'}</tbody></table>
+                <div class="totals"><div>Subtotal: <strong>$${subtotal.toFixed(2)}</strong></div><div>Tax (${state.taxRate}%): $${taxAmount.toFixed(2)}</div><div style="font-weight:800; border-top:1px solid #cddfe7; margin-top:8px; padding-top:8px;">TOTAL: $${totalWithTax.toFixed(2)}</div></div>
+                <div class="clause"><i class="fas fa-shipping-fast"></i> <strong>Notes:</strong><br>${escapeHtml(state.specialNotes)}<br>* Unloading: Shandong/Tianjin Branch. Order number on delivery certificate.</div>
+                <div class="sign-row"><div>Authorized Signature: ____________________</div><div>Jane Li / ABC GROUP LTD</div></div>
+                <div style="font-size:0.65rem; text-align:center; margin-top:16px;">OEM Solutions | Multi-Template PO System</div>
+            </div>
+        `;
+    }
+    
+    function escapeHtml(str) { if(!str) return ''; return String(str).replace(/[&<>]/g, m => m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
+    
+    function generateAndSave(manualSave = true) {
+        const validation = validateLineItems(currentLineItems);
+        if (!validation.valid) { alert(`请完善产品明细信息，再生成采购订单。\n${validation.message}`); return false; }
+        const state = collectFormState();
+        contractPreview.innerHTML = renderContractHTML(state);
+        if(manualSave) {
+            const now = new Date();
+            const display = `${state.poNumber} | ${now.toLocaleDateString()} ${now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} [${TEMPLATES[state.template]?.name}]`;
+            historyList.unshift({ id: Date.now(), timestamp: now.getTime(), displayDate: display, state: JSON.parse(JSON.stringify(state)) });
+            saveHistoryToLocal();
+            renderHistorySelect();
+        }
+        return true;
+    }
+    
+    function renderHistorySelect() {
+        historySelect.innerHTML = '<option value="">-- 选择历史记录 --</option>';
+        historyList.forEach(rec => { const opt = document.createElement("option"); opt.value = rec.id; opt.textContent = rec.displayDate; historySelect.appendChild(opt); });
+    }
+    function saveHistoryToLocal() { localStorage.setItem(STORAGE_KEY, JSON.stringify(historyList)); }
+    function loadHistoryFromLocal() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if(stored) { try { historyList = JSON.parse(stored); if(!Array.isArray(historyList)) historyList=[]; } catch(e){ historyList=[]; } }
+        else { historyList = []; }
+        renderHistorySelect();
+    }
+    function loadHistoryById(id) {
+        const record = historyList.find(r => r.id == id);
+        if(record && record.state) { restoreFormState(record.state); contractPreview.innerHTML = renderContractHTML(collectFormState()); }
+        else alert("无法加载历史单据");
+    }
+    function deleteHistoryById(id) { historyList = historyList.filter(r => r.id != id); saveHistoryToLocal(); renderHistorySelect(); alert("已删除记录"); }
+    
+    // 纯文本模板导出（带详细说明）
+    function generateTextTemplate() {
+        const state = collectFormState();
+        let content = "";
+        content += "# ================================================================\n";
+        content += "# 采购订单模板 (PO Template) - 使用说明\n";
+        content += "# ================================================================\n";
+        content += "# 1. 本文件为纯文本格式，可用记事本直接编辑。\n";
+        content += "# 2. 键值对格式：键=值 (等号两边不要有空格，值中不要包含换行)\n";
+        content += "# 3. 必填字段：PO_NUMBER, BUYER_NAME, BUYER_ADDRESS, 以及产品明细中的 PartNumber, Qty, UnitPrice\n";
+        content += "# 4. 日期格式请使用 YYYY-MM-DD (例如 2025-03-20)\n";
+        content += "# 5. 产品明细部分以 [PRODUCTS] 单独一行开始，随后第一行为表头，之后每行一个产品，字段用英文逗号分隔\n";
+        content += "# 6. 表头固定为：PartNumber,Description,DueDate,Qty,UnitPrice,Discount\n";
+        content += "#    - DueDate 可选，留空则自动设为当日；Discount 为百分比数字，如 5 表示 5%\n";
+        content += "# 7. 导入时系统会自动校验数量>0且单价>0，请确保填写完整。\n";
+        content += "# 8. 您也可以只修改产品行，其他字段保持默认即可。\n";
+        content += "# ================================================================\n\n";
+        
+        content += `PO_NUMBER=${state.poNumber}\n`;
+        content += `ORDER_DATE=${state.orderDate}\n`;
+        content += `BUYER_NAME=${state.buyerName}\n`;
+        content += `BUYER_ADDRESS=${state.buyerAddress}\n`;
+        content += `BUYER_TEL=${state.buyerTel}\n`;
+        content += `BUYER_FAX=${state.buyerFax}\n`;
+        content += `VAT_NUMBER=${state.vatNumber}\n`;
+        content += `WEB_EMAIL=${state.webEmail}\n`;
+        content += `TAX_RATE=${state.taxRate}\n`;
+        content += `SPECIAL_NOTES=${state.specialNotes}\n`;
+        content += `[PRODUCTS]\n`;
+        content += `PartNumber,Description,DueDate,Qty,UnitPrice,Discount\n`;
+        for (let item of state.lineItems) {
+            const due = item.dueDate || "";
+            const qty = item.qty || 0;
+            const price = item.price || 0;
+            const disc = item.disc || 0;
+            content += `${item.partNo},${item.desc},${due},${qty},${price},${disc}\n`;
+        }
+        return content;
+    }
+    
+    function importFromTextFile(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const text = e.target.result;
+                const lines = text.split(/\r?\n/);
+                let newState = {
+                    poNumber: "", orderDate: "", buyerName: "", buyerAddress: "", buyerTel: "", buyerFax: "",
+                    vatNumber: "", webEmail: "", taxRate: 0, specialNotes: "", lineItems: []
+                };
+                let inProducts = false;
+                for (let line of lines) {
+                    line = line.trim();
+                    if (line === "" || line.startsWith("#")) continue;
+                    if (line === "[PRODUCTS]") { inProducts = true; continue; }
+                    if (!inProducts) {
+                        const idx = line.indexOf("=");
+                        if (idx > 0) {
+                            const key = line.substring(0, idx).trim();
+                            const val = line.substring(idx+1).trim();
+                            switch(key) {
+                                case "PO_NUMBER": newState.poNumber = val; break;
+                                case "ORDER_DATE": newState.orderDate = val; break;
+                                case "BUYER_NAME": newState.buyerName = val; break;
+                                case "BUYER_ADDRESS": newState.buyerAddress = val; break;
+                                case "BUYER_TEL": newState.buyerTel = val; break;
+                                case "BUYER_FAX": newState.buyerFax = val; break;
+                                case "VAT_NUMBER": newState.vatNumber = val; break;
+                                case "WEB_EMAIL": newState.webEmail = val; break;
+                                case "TAX_RATE": newState.taxRate = parseFloat(val) || 0; break;
+                                case "SPECIAL_NOTES": newState.specialNotes = val; break;
+                            }
+                        }
+                    } else {
+                        if (line.toLowerCase().startsWith("partnumber")) continue;
+                        const parts = line.split(",");
+                        if (parts.length >= 6) {
+                            newState.lineItems.push({
+                                partNo: parts[0].trim(),
+                                desc: parts[1].trim(),
+                                dueDate: parts[2].trim(),
+                                qty: parseFloat(parts[3]) || 0,
+                                price: parseFloat(parts[4]) || 0,
+                                disc: parseFloat(parts[5]) || 0
+                            });
+                        }
+                    }
+                }
+                if (!newState.poNumber) throw new Error("缺少PO_NUMBER");
+                if (currentTemplate !== "classic") switchTemplate("classic");
+                document.getElementById("poNumber").value = newState.poNumber;
+                if (newState.orderDate) document.getElementById("orderDate").value = newState.orderDate;
+                document.getElementById("buyerName").value = newState.buyerName;
+                document.getElementById("buyerAddress").value = newState.buyerAddress;
+                document.getElementById("buyerTel").value = newState.buyerTel;
+                document.getElementById("buyerFax").value = newState.buyerFax;
+                document.getElementById("vatNumber").value = newState.vatNumber;
+                document.getElementById("webEmail").value = newState.webEmail;
+                document.getElementById("taxRate").value = newState.taxRate;
+                document.getElementById("specialNotes").value = newState.specialNotes;
+                currentLineItems = newState.lineItems.length ? newState.lineItems : getDefaultItemsForTemplate("classic");
+                renderEditor();
+                generateAndSave(true);
+                alert("导入成功！已切换至标准模板并生成采购订单。");
+            } catch(err) {
+                alert("模板解析失败，请确保格式正确（键值对 + [PRODUCTS]表格）。\n" + err.message);
+            }
+        };
+        reader.readAsText(file, "UTF-8");
+    }
+    
+    function downloadTextTemplate() {
+        const content = generateTextTemplate();
+        const blob = new Blob([content], {type: "text/plain;charset=utf-8"});
+        const a = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        a.href = url;
+        a.download = "po_template_sample.txt";
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+    
+    function init() {
+        loadHistoryFromLocal();
+        if(historyList.length > 0) {
+            const latest = historyList[0];
+            restoreFormState(latest.state);
+            contractPreview.innerHTML = renderContractHTML(collectFormState());
+        } else {
+            currentLineItems = getDefaultItemsForTemplate("classic");
+            renderEditor();
+            generateAndSave(true);
+        }
+        document.querySelectorAll(".template-switch-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => { const tpl = e.currentTarget.getAttribute("data-template"); if(tpl && TEMPLATES[tpl]) switchTemplate(tpl); });
+        });
+        generateBtn.addEventListener("click", () => generateAndSave(true));
+        addRowBtn.addEventListener("click", () => {
+            const tpl = TEMPLATES[currentTemplate];
+            const newItem = {};
+            tpl.cols.forEach(col => { newItem[col.key] = col.default || ""; });
+            if(newItem.dueDate === undefined && tpl.cols.find(c=>c.key==="dueDate")) newItem.dueDate = new Date().toISOString().slice(0,10);
+            currentLineItems.push(newItem);
+            renderEditor();
+            const state = collectFormState();
+            contractPreview.innerHTML = renderContractHTML(state);
+        });
+        historySelect.addEventListener("change", (e) => { if(e.target.value) loadHistoryById(parseInt(e.target.value)); });
+        deleteHistoryBtn.addEventListener("click", () => { const sel = historySelect.value; if(sel) deleteHistoryById(parseInt(sel)); });
+        printPreviewBtn.addEventListener("click", () => window.print());
+        printInnerBtn.addEventListener("click", () => window.print());
+        importTxtBtn.addEventListener("click", () => { const inp = document.createElement("input"); inp.type="file"; inp.accept=".txt"; inp.onchange = (e) => { if(e.target.files[0]) importFromTextFile(e.target.files[0]); }; inp.click(); });
+        downloadTemplateBtn.addEventListener("click", downloadTextTemplate);
+    }
+    init();
+</script>
+</body>
+</html>
