@@ -175,7 +175,6 @@
             font-weight: 500;
             cursor: pointer;
         }
-        /* 表格样式 - 确保列顺序正确 */
         .mini-table {
             width: 100%;
             border-collapse: collapse;
@@ -274,7 +273,11 @@
         .clause { font-size: 0.7rem; color: #4a627a; margin-top: 28px; border-top: 1px dashed #cbdde9; padding-top: 20px; }
         .sign-row { margin-top: 32px; display: flex; justify-content: space-between; }
         .info-tip { font-size: 0.7rem; color: #6c8eae; margin-top: 12px; }
-        @media (max-width: 760px) { .form-grid { grid-template-columns: 1fr; } .full-width { grid-column: span 1; } }
+        @media (max-width: 760px) { 
+            .form-grid { grid-template-columns: 1fr; } 
+            .full-width { grid-column: span 1; }
+            .mini-table { display: block; overflow-x: auto; white-space: nowrap; }
+        }
     </style>
 </head>
 <body>
@@ -314,7 +317,7 @@
         <div class="info-tip"><i class="fas fa-info-circle"></i> 模板格式为纯文本，可用记事本编辑。支持导入导出自定义模板（标准模板字段）。历史记录自动保存。</div>
     </div>
     
-    <!-- 产品明细编辑表格（带添加/删除行，列顺序严格遵循模板） -->
+    <!-- 产品明细编辑表格（带添加/删除行） -->
     <div class="items-editor-wrapper">
         <div class="items-header">
             <div class="left-tools">
@@ -329,6 +332,7 @@
         </div>
         <div style="overflow-x: auto;">
             <table class="mini-table" id="itemsEditorTable">
+                <colgroup id="colgroup"></colgroup>
                 <thead id="editorHeader"></thead>
                 <tbody id="editorTbody"></tbody>
             </table>
@@ -343,7 +347,7 @@
 </div>
 
 <script>
-    // 日期格式化：月份英文缩写
+    // 日期格式化
     function formatOrderDate(dateString) {
         if (!dateString) return "";
         const date = new Date(dateString);
@@ -408,6 +412,7 @@
 
     const editorHeader = document.getElementById("editorHeader");
     const editorTbody = document.getElementById("editorTbody");
+    const colgroup = document.getElementById("colgroup");
     const generateBtn = document.getElementById("generateBtn");
     const addRowBtn = document.getElementById("addRowBtn");
     const historySelect = document.getElementById("historySelect");
@@ -423,91 +428,88 @@
         return tpl.sampleItems.map(item => ({ ...item }));
     }
     
-    // 核心修复：确保表格列顺序严格与模板cols一致
+    // 核心渲染：使用 createElement 严格按列顺序构建，确保数据和表头对齐
     function renderEditor() {
         const tpl = TEMPLATES[currentTemplate];
         if (!tpl) return;
-        const dataCols = tpl.cols;  // 顺序已经定义好
+        const dataCols = tpl.cols;
+        const colCount = dataCols.length + 1; // +1 操作列
         
-        // 生成表头：数据列 + 操作列
-        let headerHtml = `<tr>`;
+        // 设置 colgroup：数据列均分，操作列固定 60px
+        colgroup.innerHTML = '';
+        const dataPercent = (100 / colCount).toFixed(2);
+        for (let i = 0; i < dataCols.length; i++) {
+            const col = document.createElement('col');
+            col.style.width = `${dataPercent}%`;
+            colgroup.appendChild(col);
+        }
+        const actionCol = document.createElement('col');
+        actionCol.style.width = '60px';
+        colgroup.appendChild(actionCol);
+        
+        // 生成表头
+        editorHeader.innerHTML = '';
+        const headerRow = document.createElement('tr');
         dataCols.forEach(col => {
-            headerHtml += `<th>${col.label}</th>`;
+            const th = document.createElement('th');
+            th.textContent = col.label;
+            headerRow.appendChild(th);
         });
-        headerHtml += `<th style="width:60px">操作</th></tr>`;
-        editorHeader.innerHTML = headerHtml;
+        const thAction = document.createElement('th');
+        thAction.textContent = '操作';
+        headerRow.appendChild(thAction);
+        editorHeader.appendChild(headerRow);
         
         // 生成数据行
-        editorTbody.innerHTML = "";
+        editorTbody.innerHTML = '';
         currentLineItems.forEach((item, idx) => {
-            let rowHtml = `<tr>`;
-            // 按照 dataCols 的顺序输出每个字段的输入框
+            const row = document.createElement('tr');
+            // 数据单元格
             dataCols.forEach(col => {
+                const td = document.createElement('td');
                 let value = item[col.key] !== undefined ? item[col.key] : (col.default || "");
                 if (col.type === "date" && !value) value = new Date().toISOString().slice(0,10);
-                // 特殊处理：如果是数字类型且值为空，设为0
                 if (col.type === "number" && (value === "" || value === undefined)) value = 0;
-                rowHtml += `<td><input type="${col.type === 'number' ? 'number' : (col.type === 'date' ? 'date' : 'text')}" 
-                                         value="${escapeHtml(String(value))}" 
-                                         data-idx="${idx}" 
-                                         data-field="${col.key}"
-                                         step="${col.type === 'number' ? 'any' : ''}"
-                                         class="editor-input"></td>`;
+                const input = document.createElement('input');
+                input.type = col.type === 'number' ? 'number' : (col.type === 'date' ? 'date' : 'text');
+                input.value = value;
+                input.step = col.type === 'number' ? 'any' : undefined;
+                input.setAttribute('data-idx', idx);
+                input.setAttribute('data-field', col.key);
+                input.classList.add('editor-input');
+                input.addEventListener('change', (e) => {
+                    const i = parseInt(e.target.getAttribute('data-idx'));
+                    const field = e.target.getAttribute('data-field');
+                    let newVal = e.target.value;
+                    const colDef = TEMPLATES[currentTemplate].cols.find(c => c.key === field);
+                    if (colDef && colDef.type === 'number') newVal = parseFloat(newVal) || 0;
+                    if (currentLineItems[i]) {
+                        currentLineItems[i][field] = newVal;
+                    }
+                    // 实时刷新预览
+                    const state = collectFormState();
+                    contractPreview.innerHTML = renderContractHTML(state);
+                });
+                td.appendChild(input);
+                row.appendChild(td);
             });
-            // 操作按钮列
-            rowHtml += `<td style="text-align:center"><button class="delete-row-btn" data-idx="${idx}"><i class="fas fa-trash-alt"></i></button></td>`;
-            rowHtml += `</tr>`;
-            editorTbody.insertAdjacentHTML('beforeend', rowHtml);
+            // 删除按钮单元格
+            const actionTd = document.createElement('td');
+            actionTd.style.textAlign = 'center';
+            const delBtn = document.createElement('button');
+            delBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+            delBtn.className = 'delete-row-btn';
+            delBtn.title = '删除此产品';
+            delBtn.addEventListener('click', () => {
+                currentLineItems.splice(idx, 1);
+                renderEditor();
+                const state = collectFormState();
+                contractPreview.innerHTML = renderContractHTML(state);
+            });
+            actionTd.appendChild(delBtn);
+            row.appendChild(actionTd);
+            editorTbody.appendChild(row);
         });
-        
-        // 绑定输入框事件和删除按钮事件（使用事件委托）
-        document.querySelectorAll('#editorTbody .editor-input').forEach(input => {
-            input.removeEventListener('change', handleInputChange);
-            input.addEventListener('change', handleInputChange);
-        });
-        document.querySelectorAll('#editorTbody .delete-row-btn').forEach(btn => {
-            btn.removeEventListener('click', handleDeleteClick);
-            btn.addEventListener('click', handleDeleteClick);
-        });
-        
-        // 动态调整列宽：使数据列均分，操作列固定宽度
-        const colCount = dataCols.length + 1;
-        const dataPercent = (100 / colCount).toFixed(2);
-        let styleText = `#itemsEditorTable th, #itemsEditorTable td { box-sizing: border-box; }`;
-        styleText += `#itemsEditorTable th:not(:last-child), #itemsEditorTable td:not(:last-child) { width: ${dataPercent}%; }`;
-        styleText += `#itemsEditorTable th:last-child, #itemsEditorTable td:last-child { width: 60px; text-align: center; }`;
-        let styleEl = document.getElementById('dynamic-col-width');
-        if (styleEl) styleEl.remove();
-        styleEl = document.createElement('style');
-        styleEl.id = 'dynamic-col-width';
-        styleEl.textContent = styleText;
-        document.head.appendChild(styleEl);
-    }
-    
-    function handleInputChange(e) {
-        const input = e.target;
-        const idx = parseInt(input.getAttribute('data-idx'));
-        const field = input.getAttribute('data-field');
-        let newVal = input.value;
-        const colDef = TEMPLATES[currentTemplate].cols.find(c => c.key === field);
-        if (colDef && colDef.type === 'number') newVal = parseFloat(newVal) || 0;
-        if (currentLineItems[idx]) {
-            currentLineItems[idx][field] = newVal;
-        }
-        // 实时刷新预览
-        const state = collectFormState();
-        contractPreview.innerHTML = renderContractHTML(state);
-    }
-    
-    function handleDeleteClick(e) {
-        const btn = e.currentTarget;
-        const idx = parseInt(btn.getAttribute('data-idx'));
-        if (!isNaN(idx)) {
-            currentLineItems.splice(idx, 1);
-            renderEditor();
-            const state = collectFormState();
-            contractPreview.innerHTML = renderContractHTML(state);
-        }
     }
     
     function switchTemplate(tplName) {
@@ -591,7 +593,7 @@
         const totalWithTax = subtotal + taxAmount;
         const formattedOrderDate = formatOrderDate(state.orderDate);
         const dataCols = tpl.cols;
-        let tableHead = `<td>${dataCols.map(c => `<th>${c.label}</th>`).join('')}<th>Extended Price (USD)</th>筹`;
+        let tableHead = `<tr>${dataCols.map(c => `<th>${c.label}</th>`).join('')}<th>Extended Price (USD)</th>筹`;
         let tableBody = "";
         items.forEach((it, idx) => {
             let row = "<tr>";
@@ -601,7 +603,7 @@
                 const align = isNumeric ? ' style="text-align:right;"' : '';
                 row += `<td${align}>${escapeHtml(String(val))}</td>`;
             });
-            row += `<td style="text-align:right">$${extendedVals[idx].toFixed(2)}</td>`;
+            row += `<td style="text-align:right">$${extendedVals[idx].toFixed(2)}<\/td>`;
             row += `</tr>`;
             tableBody += row;
         });
@@ -620,7 +622,7 @@
                         <span><strong>Order Date:</strong> ${escapeHtml(formattedOrderDate)}</span>
                     </div>
                 </div>
-                <table class="po-table"><thead>${tableHead}</thead><tbody>${tableBody || '<tr><td colspan="10">暂无产品明细</td>'}</tbody></table>
+                <table class="po-table"><thead>${tableHead}</thead><tbody>${tableBody || '<tr><td colspan="10">暂无产品明细<\/td></tr>'}</tbody></table>
                 <div class="totals"><div>Subtotal: <strong>$${subtotal.toFixed(2)}</strong></div><div>Tax (${state.taxRate}%): $${taxAmount.toFixed(2)}</div><div style="font-weight:800; border-top:1px solid #cddfe7; margin-top:8px; padding-top:8px;">TOTAL: $${totalWithTax.toFixed(2)}</div></div>
                 <div class="clause"><i class="fas fa-shipping-fast"></i> <strong>Notes:</strong><br>${escapeHtml(state.specialNotes)}<br>* Unloading: Shandong/Tianjin Branch. Order number on delivery certificate.</div>
                 <div class="sign-row"><div>Authorized Signature: ____________________</div><div>Jane Li / ABC GROUP LTD</div></div>
