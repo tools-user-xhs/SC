@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>客户档案订单管理系统 | 多币种订单管理</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', 'Inter', sans-serif;
+        }
+        body {
+            background: #f0f4f9;
+            padding: 1.8rem 1.2rem;
+            min-height: 100vh;
+        }
+        .crm-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.12);
+            overflow: hidden;
+        }
+        .crm-header {
+            background: linear-gradient(135deg, #0b2b3b 0%, #123d4f 100%);
+            padding: 1.5rem 2rem;
+            color: white;
+        }
+        .crm-header h1 {
+            font-size: 1.7rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .crm-header p {
+            opacity: 0.85;
+            font-size: 0.85rem;
+            margin-top: 6px;
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            padding: 1rem 2rem;
+            background: white;
+            border-bottom: 1px solid #e4e9f0;
+        }
+        .stats-area {
+            background: #f1f5f9;
+            padding: 6px 16px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 16px;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.8rem;
+            border: 1px solid #dce3ec;
+            background: white;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-primary {
+            background: #1f5e7e;
+            border-color: #1f5e7e;
+            color: white;
+        }
+        .btn-primary:hover { background: #0f4b66; transform: translateY(-1px);}
+        .btn-outline:hover { background: #f1f5f9; }
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 48px;
+            padding: 3px 12px;
+        }
+        .search-box input {
+            border: none;
+            padding: 7px 8px;
+            width: 200px;
+            outline: none;
+            font-size: 0.85rem;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            padding: 0 0 1rem 0;
+        }
+        .customer-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            min-width: 1100px;
+        }
+        .customer-table th, .customer-table td {
+            padding: 1rem 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid #e9edf2;
+            vertical-align: middle;
+        }
+        .customer-table th {
+            background: #fafcff;
+            color: #2c3e4e;
+            font-weight: 600;
+        }
+        .customer-table tr:hover {
+            background: #fefcf5;
+        }
+        .badge-active {
+            background: #e6f7e6;
+            color: #2b6e3c;
+            padding: 4px 8px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .badge-mid {
+            background: #fff0db;
+            color: #b95b0d;
+        }
+        .badge-low {
+            background: #ffe8e8;
+            color: #b91c1c;
+        }
+        .badge-cold {
+            background: #eef2f6;
+            color: #5f6c7a;
+        }
+        .action-icons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .action-icons i {
+            cursor: pointer;
+            font-size: 1rem;
+            transition: 0.1s;
+            color: #5b6e8c;
+        }
+        .action-icons i:hover { transform: scale(1.1); }
+        .fa-cart-plus:hover { color: #2c7a4d; }
+        .order-detail-icon {
+            font-size: 1rem;
+            cursor: pointer;
+            color: #3b82f6;
+            transition: 0.1s;
+        }
+        .order-detail-icon:hover {
+            color: #1f5e7e;
+            transform: scale(1.05);
+        }
+        .count-badge {
+            background: #eef2ff;
+            border-radius: 30px;
+            padding: 2px 8px;
+            font-weight: 600;
+            display: inline-block;
+            text-align: center;
+            font-size: 0.75rem;
+        }
+        .status-pending {
+            background: #ffedd5;
+            color: #c2410c;
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.7rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .status-completed {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.7rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .order-subtable {
+            width: 100%;
+            border-collapse: collapse;
+            background: #f9fbfe;
+            border-radius: 16px;
+            margin-top: 8px;
+            margin-bottom: 4px;
+        }
+        .order-subtable th, .order-subtable td {
+            padding: 8px 8px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.75rem;
+        }
+        .order-subtable th {
+            background: #f1f5f9;
+            font-weight: 600;
+            color: #334155;
+        }
+        .order-subtable .order-actions i {
+            margin: 0 4px;
+            cursor: pointer;
+            color: #5b6e8c;
+        }
+        .order-subtable .order-actions i:hover { color: #1f5e7e; }
+        .inline-add-order {
+            text-align: left;
+            margin-bottom: 10px;
+            margin-top: 4px;
+        }
+        .inline-add-order button {
+            background: #1f5e7e;
+            border: none;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 28px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .inline-add-order button:hover {
+            background: #0f4b66;
+        }
+        .modal-overlay {
+            position: fixed;
+            top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(3px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transition: 0.2s;
+        }
+        .modal-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 32px;
+            padding: 1.5rem;
+            box-shadow: 0 20px 30px -12px rgba(0,0,0,0.3);
+        }
+        .modal-content h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 8px;
+            color: #1f5e7e;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            font-weight: 500;
+            font-size: 0.8rem;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #cfdde6;
+            border-radius: 24px;
+            font-size: 0.85rem;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        .btn-cancel { background: #f1f5f9; color: #334155; padding: 6px 16px; border-radius: 30px; border: none; cursor: pointer; }
+        .btn-save { background: #1f5e7e; color: white; padding: 6px 20px; border-radius: 30px; border: none; cursor: pointer; }
+        .history-list {
+            max-height: 60vh;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .history-item {
+            padding: 10px 12px;
+            border-left: 3px solid #1f5e7e;
+            background: #f9fbfe;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        .toast-msg {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1e2f3c;
+            color: white;
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            z-index: 1200;
+            opacity: 0;
+            transition: 0.2s;
+        }
+        .toast-msg.show { opacity: 1; }
+        footer {
+            text-align: center;
+            font-size: 0.7rem;
+            padding: 1rem;
+            color: #7c8b9c;
+            border-top: 1px solid #eef2f8;
+        }
+        @media (max-width: 750px) {
+            .toolbar { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+<div class="crm-container">
+    <div class="crm-header">
+        <h1><i class="fas fa-address-book"></i> 客户档案订单管理系统</h1>
+        <p>订单支持CNY/USD币种切换 | 单价×数量自动计算金额 | 所有示例数据均为虚拟，无真实信息</p>
+    </div>
+    <div class="toolbar">
+        <div class="stats-area" id="statsDisplay">加载中...</div>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="姓名/电话/公司" autocomplete="off">
+                <button id="clearSearchBtn" style="background:none; border:none;"><i class="fas fa-times-circle"></i></button>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="newCustomerBtn"><i class="fas fa-plus"></i> 新增客户</button>
+                <button class="btn btn-outline" id="exportCsvBtn"><i class="fas fa-download"></i> 导出订单明细CSV</button>
+                <button class="btn btn-outline" id="resetDemoBtn"><i class="fas fa-database"></i> 重置示例</button>
+            </div>
+        </div>
+    </div>
+    <div class="table-wrapper">
+        <table class="customer-table" id="customerTable">
+            <thead>
+                <tr>
+                    <th>姓名</th>
+                    <th>公司</th>
+                    <th>📦订单数</th>
+                    <th>订单明细</th>
+                    <th>电话</th>
+                    <th>🔥活跃度</th>
+                    <th>订单状态</th>
+                    <th style="width:100px">操作</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr><td colspan="8" style="text-align:center;">加载客户数据......</td</tr>
+            </tbody>
+        </table>
+    </div>
+    <footer>💡 订单明细中新增“单价”列，修改单价或数量时金额自动重新计算。所有示例数据均为虚拟，请放心使用。</footer>
+</div>
+
+<!-- 客户新增/编辑模态框 -->
+<div id="customerModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3><i class="fas fa-address-card"></i> <span id="modalTitle">客户信息</span></h3>
+        <form id="customerForm">
+            <input type="hidden" id="editId">
+            <div class="form-group"><label>姓名 *</label><input type="text" id="custName" placeholder="姓名"></div>
+            <div class="form-group"><label>电话</label><input type="text" id="custPhone" placeholder="联系电话"></div>
+            <div class="form-group"><label>邮箱</label><input type="email" id="custEmail" placeholder="邮箱"></div>
+            <div class="form-group"><label>公司</label><input type="text" id="custCompany" placeholder="公司名称"></div>
+            <div class="form-group"><label>备注</label><textarea id="custNotes" rows="2" placeholder="跟进记录"></textarea></div>
+            <div class="modal-buttons"><button type="button" class="btn-cancel" id="cancelModalBtn">取消</button><button type="submit" class="btn-save">保存客户</button></div>
+        </form>
+    </div>
+</div>
+
+<!-- 历史记录弹窗 -->
+<div id="historyModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 550px;">
+        <h3><i class="fas fa-history"></i> 客户历史记录</h3>
+        <div id="historyContent" class="history-list">加载中...</div>
+        <div class="modal-buttons"><button id="closeHistoryBtn" class="btn-cancel">关闭</button></div>
+    </div>
+</div>
+
+<!-- 订单编辑/新增弹窗 -->
+<div id="orderFormModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 id="orderFormTitle"><i class="fas fa-file-invoice"></i> 订单信息</h3>
+        <form id="orderForm">
+            <input type="hidden" id="orderEditId">
+            <input type="hidden" id="orderCustomerId">
+            <div class="form-group"><label>订单号 *</label><input type="text" id="orderNo" placeholder="例如：ORD-2025001" required></div>
+            <div class="form-group"><label>订单状态</label>
+                <select id="orderStatus">
+                    <option value="待处理">待处理</option><option value="进行中">进行中</option><option value="已完成">已完成</option><option value="已取消">已取消</option>
+                </select>
+            </div>
+            <div class="form-group"><label>产品名称 *</label><input type="text" id="productName" placeholder="例：产品XXX" required></div>
+            <div class="form-group"><label>数量</label><input type="number" id="quantity" value="1" min="1" step="1"></div>
+            <div class="form-group"><label>单价 (币种单位)</label><input type="number" step="0.01" id="unitPrice" placeholder="0.00"></div>
+            <div class="form-group"><label>币种</label>
+                <select id="orderCurrency">
+                    <option value="CNY">人民币 (CNY) ￥</option>
+                    <option value="USD">美元 (USD) $</option>
+                </select>
+            </div>
+            <div class="form-group"><label>订单金额 (自动计算)</label><input type="number" step="0.01" id="orderAmount" placeholder="0.00" readonly style="background:#f1f5f9;"></div>
+            <div class="form-group"><label>下单日期</label><input type="date" id="orderDate"></div>
+            <div class="modal-buttons"><button type="button" id="cancelOrderFormBtn" class="btn-cancel">取消</button><button type="submit" class="btn-save">保存订单</button></div>
+        </form>
+    </div>
+</div>
+
+<div id="toastMsg" class="toast-msg"></div>
+
+<script>
+    const STORAGE_KEY = 'smart_crm_final_aligned_fixed';
+    let customers = [];
+    let currentSearchKeyword = '';
+    let currentlyExpandedCustomerId = null;
+
+    // DOM 元素
+    const tableBody = document.getElementById('tableBody');
+    const searchInput = document.getElementById('searchInput');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    const statsDisplay = document.getElementById('statsDisplay');
+    const newCustomerBtn = document.getElementById('newCustomerBtn');
+    const exportCsvBtn = document.getElementById('exportCsvBtn');
+    const resetDemoBtn = document.getElementById('resetDemoBtn');
+    const customerModal = document.getElementById('customerModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const customerForm = document.getElementById('customerForm');
+    const editIdInput = document.getElementById('editId');
+    const custName = document.getElementById('custName');
+    const custPhone = document.getElementById('custPhone');
+    const custEmail = document.getElementById('custEmail');
+    const custCompany = document.getElementById('custCompany');
+    const custNotes = document.getElementById('custNotes');
+    const cancelModalBtn = document.getElementById('cancelModalBtn');
+    const historyModal = document.getElementById('historyModal');
+    const closeHistoryBtn = document.getElementById('closeHistoryBtn');
+    const historyContent = document.getElementById('historyContent');
+    const orderFormModal = document.getElementById('orderFormModal');
+    const orderForm = document.getElementById('orderForm');
+    const orderEditId = document.getElementById('orderEditId');
+    const orderCustomerIdHidden = document.getElementById('orderCustomerId');
+    const orderNoInput = document.getElementById('orderNo');
+    const orderStatusSelect = document.getElementById('orderStatus');
+    const productNameInput = document.getElementById('productName');
+    const quantityInput = document.getElementById('quantity');
+    const unitPriceInput = document.getElementById('unitPrice');
+    const orderCurrencySelect = document.getElementById('orderCurrency');
+    const orderAmountInput = document.getElementById('orderAmount');
+    const orderDateInput = document.getElementById('orderDate');
+    const cancelOrderFormBtn = document.getElementById('cancelOrderFormBtn');
+    const orderFormTitle = document.getElementById('orderFormTitle');
+
+    function showToast(msg, isErr = false) {
+        const toast = document.getElementById('toastMsg');
+        toast.textContent = isErr ? `⚠️ ${msg}` : `✓ ${msg}`;
+        toast.style.backgroundColor = isErr ? '#b91c1c' : '#1e2f3c';
+        toast.classList.add('show');
+        if(window.toastTimer) clearTimeout(window.toastTimer);
+        window.toastTimer = setTimeout(() => toast.classList.remove('show'), 2300);
+    }
+
+    function generateId() { return Date.now() + '-' + Math.random().toString(36).substring(2, 8); }
+    function formatDate(isoStr) {
+        if(!isoStr) return '—';
+        const d = new Date(isoStr);
+        return `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
+    }
+
+    function getActivityLevel(orderCount) {
+        const total = orderCount || 0;
+        if(total >= 5) return { label: '极高活跃 🔥', class: 'badge-active' };
+        if(total >= 3) return { label: '高活跃 ⭐', class: 'badge-mid' };
+        if(total >= 1) return { label: '中活跃 🌱', class: 'badge-low' };
+        return { label: '待激活 ⚪', class: 'badge-cold' };
+    }
+
+    function getCustomerOrderStatus(customer) {
+        const orders = customer.orders || [];
+        if (orders.length === 0) return { label: '无订单', class: 'status-completed' };
+        const hasPending = orders.some(o => o.status === '待处理' || o.status === '进行中');
+        if (hasPending) return { label: '⚠️ 待完成', class: 'status-pending' };
+        else return { label: '✅ 已完成', class: 'status-completed' };
+    }
+
+    function persist() { localStorage.setItem(STORAGE_KEY, JSON.stringify(customers)); }
+
+    function addHistory(customerId, eventDesc) {
+        const customer = customers.find(c => c.id === customerId);
+        if(!customer) return;
+        if(!customer.history) customer.history = [];
+        customer.history.unshift({ time: new Date().toISOString(), event: eventDesc });
+        if(customer.history.length > 50) customer.history.pop();
+        customer.updatedAt = new Date().toISOString();
+        persist();
+        renderTable();
+        if(currentlyExpandedCustomerId === customerId) renderOrderSubtable(customerId);
+    }
+
+    function updateOrderCount(customer) {
+        const newCount = (customer.orders || []).length;
+        customer.orderCount = newCount;
+        return newCount;
+    }
+
+    function migrateOrder(order) {
+        let changed = false;
+        if(order.productName === undefined) { order.productName = '产品XXX'; changed = true; }
+        if(order.quantity === undefined) { order.quantity = 1; changed = true; }
+        if(order.amount === undefined) { order.amount = 0; changed = true; }
+        if(order.currency === undefined) { order.currency = 'USD'; changed = true; }
+        if(order.unitPrice === undefined) {
+            if(order.quantity > 0) order.unitPrice = order.amount / order.quantity;
+            else order.unitPrice = 0;
+            changed = true;
+        }
+        return changed;
+    }
+    function migrateCustomer(c) {
+        let changed = false;
+        if(!c.createdAt) { c.createdAt = new Date().toISOString(); changed=true; }
+        if(!c.updatedAt) { c.updatedAt = c.createdAt; changed=true; }
+        if(c.orderCount === undefined) { c.orderCount = 0; changed=true; }
+        if(c.cooperationCount !== undefined) { delete c.cooperationCount; changed=true; }
+        if(!c.history) { c.history = []; c.history.unshift({ time: c.createdAt, event: '客户资料创建' }); changed=true; }
+        if(!c.orders) { c.orders = []; changed=true; }
+        else { for(let ord of c.orders) if(migrateOrder(ord)) changed = true; }
+        if(c.orders.length !== c.orderCount) { c.orderCount = c.orders.length; changed=true; }
+        return changed;
+    }
+
+    function loadData() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if(stored) {
+            try { customers = JSON.parse(stored); } catch(e){ customers = []; }
+        }
+        if(!customers || !customers.length) {
+            const demoOrders1 = [
+                { id: generateId(), orderNo: 'ORD-2401-001', productName: '产品XXX', quantity: 2, unitPrice: 6250, amount: 12500, currency: 'USD', orderDate: '2025-02-10', status: '已完成' },
+                { id: generateId(), orderNo: 'ORD-2403-045', productName: '服务XXX', quantity: 5, unitPrice: 1360, amount: 6800, currency: 'CNY', orderDate: '2025-03-22', status: '进行中' }
+            ];
+            const demoOrders2 = [
+                { id: generateId(), orderNo: 'ORD-2402-011', productName: '方案XXX', quantity: 1, unitPrice: 3500, amount: 3500, currency: 'USD', orderDate: '2025-02-18', status: '已完成' }
+            ];
+            customers = [
+                { id: generateId(), name: '李XX', phone: '138********', email: 'li.xx@demo.com', company: 'XX科技有限公司', notes: '技术总监，对AI产品感兴趣', createdAt: new Date(2025,1,10).toISOString(), updatedAt: new Date().toISOString(), history: [], orders: demoOrders1, orderCount: demoOrders1.length },
+                { id: generateId(), name: '张XX', phone: '159********', email: 'zhang.xx@demo.com', company: 'XX贸易有限公司', notes: '采购负责人，关注ERP系统', createdAt: new Date(2025,2,5).toISOString(), updatedAt: new Date().toISOString(), history: [], orders: demoOrders2, orderCount: demoOrders2.length },
+                { id: generateId(), name: '王XX', phone: '186********', email: 'wang.xx@demo.com', company: 'XX传媒有限公司', notes: '市场经理，潜力客户', createdAt: new Date(2025,3,1).toISOString(), updatedAt: new Date().toISOString(), history: [], orders: [], orderCount: 0 }
+            ];
+            customers.forEach(c => { 
+                if(!c.history.length) c.history.unshift({ time: c.createdAt, event: '客户创建 (虚拟示例数据)' }); 
+                if(c.orders && c.orders.length) c.history.unshift({ time: new Date().toISOString(), event: `初始化订单 ${c.orders.length} 笔` });
+            });
+            persist();
+        }
+        let anyChange = false;
+        customers.forEach(c => { if(migrateCustomer(c)) anyChange = true; });
+        if(anyChange) persist();
+    }
+
+    function getFiltered() {
+        if(!currentSearchKeyword.trim()) return [...customers];
+        const kw = currentSearchKeyword.trim().toLowerCase();
+        return customers.filter(c => (c.name && c.name.toLowerCase().includes(kw)) ||
+            (c.phone && c.phone.toLowerCase().includes(kw)) ||
+            (c.company && c.company.toLowerCase().includes(kw)) ||
+            (c.email && c.email.toLowerCase().includes(kw)));
+    }
+
+    function formatCurrency(amount, currency) {
+        const symbol = currency === 'CNY' ? '¥' : '$';
+        return `${symbol} ${parseFloat(amount || 0).toFixed(2)}`;
+    }
+
+    function recalcAmount() {
+        const qty = parseFloat(quantityInput.value) || 0;
+        const price = parseFloat(unitPriceInput.value) || 0;
+        orderAmountInput.value = (qty * price).toFixed(2);
+    }
+
+    function bindAmountCalculation() {
+        quantityInput.removeEventListener('input', recalcAmount);
+        unitPriceInput.removeEventListener('input', recalcAmount);
+        quantityInput.addEventListener('input', recalcAmount);
+        unitPriceInput.addEventListener('input', recalcAmount);
+    }
+
+    // 订单子表格渲染 - 严格9列，每个标签完整闭合
+    function renderOrderSubtable(customerId) {
+        const customer = customers.find(c => c.id === customerId);
+        if(!customer) return;
+        const orders = customer.orders || [];
+        const container = document.getElementById(`order-subtable-${customerId}`);
+        if(!container) return;
+        
+        let html = `<div class="inline-add-order"><button class="add-order-inline-btn" data-customerid="${customerId}"><i class="fas fa-plus"></i> 新增订单</button></div>`;
+        if(orders.length === 0) {
+            html += `<div style="padding: 12px 8px; text-align: center; background: #fef9e6; border-radius: 20px; color: #b45309;">📭 暂无订单，点击上方按钮添加第一笔订单</div>`;
+        } else {
+            html += `<table class="order-subtable"><thead>`;
+            html += `<tr><th>订单号</th><th>状态</th><th>产品名称</th><th>数量</th><th>单价</th><th>金额</th><th>币种</th><th>下单日期</th><th>操作</th></tr>`;
+            html += `</thead><tbody>`;
+            for (const order of orders) {
+                const currency = order.currency || 'USD';
+                const unitPriceDisplay = formatCurrency(order.unitPrice || 0, currency);
+                const amountDisplay = formatCurrency(order.amount || 0, currency);
+                html += `<tr>`;
+                html += `<td>${escapeHtml(order.orderNo)}</td>`;
+                html += `<td><span class="count-badge">${escapeHtml(order.status)}</span></td>`;
+                html += `<td>${escapeHtml(order.productName)}</td>`;
+                html += `<td>${order.quantity || 1}</td>`;
+                html += `<td>${unitPriceDisplay}</td>`;
+                html += `<td>${amountDisplay}</td>`;
+                html += `<td>${currency === 'CNY' ? 'CNY ￥' : 'USD $'}</td>`;
+                html += `<td>${order.orderDate || '—'}</td>`;
+                html += `<td class="order-actions">
+                            <i class="fas fa-edit edit-order-inline" data-customerid="${customerId}" data-orderid="${order.id}" title="编辑"></i>
+                            <i class="fas fa-trash-alt delete-order-inline" data-customerid="${customerId}" data-orderid="${order.id}" title="删除"></i>
+                         </td>`;
+                html += `</tr>`;
+            }
+            html += `</tbody>`;
+            html += `</table>`;
+        }
+        container.innerHTML = html;
+        
+        const addBtn = container.querySelector('.add-order-inline-btn');
+        if(addBtn) addBtn.addEventListener('click', () => openOrderForm(customerId, null));
+        container.querySelectorAll('.edit-order-inline').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const custId = btn.getAttribute('data-customerid');
+                const orderId = btn.getAttribute('data-orderid');
+                openOrderForm(custId, orderId);
+            });
+        });
+        container.querySelectorAll('.delete-order-inline').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const custId = btn.getAttribute('data-customerid');
+                const orderId = btn.getAttribute('data-orderid');
+                deleteOrderById(custId, orderId);
+            });
+        });
+    }
+
+    // 主表格渲染 - 严格8列，每个标签完整闭合
+    function renderTable() {
+        const filtered = getFiltered();
+        const total = customers.length;
+        statsDisplay.innerText = `📊 总计 ${total} 位客户 · 显示 ${filtered.length} 位`;
+        if(filtered.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;">暂无客户，点击“新增客户”开始创建</td></tr>`;
+            return;
+        }
+        let html = '';
+        for (const c of filtered) {
+            const act = getActivityLevel(c.orderCount);
+            const orderStatus = getCustomerOrderStatus(c);
+            const isExpanded = (currentlyExpandedCustomerId === c.id);
+            html += `<tr data-id="${c.id}" class="customer-main-row">`;
+            html += `<td><strong>${escapeHtml(c.name||'—')}</strong></td>`;
+            html += `<td>${escapeHtml(c.company||'—')}</td>`;
+            html += `<td><span class="count-badge">${c.orderCount || 0}</span></td>`;
+            html += `<td><i class="fas fa-receipt order-detail-icon" data-id="${c.id}" title="展开/收起订单明细"></i></td>`;
+            html += `<td>${escapeHtml(c.phone||'—')}</td>`;
+            html += `<td><span class="${act.class}">${act.label}</span></td>`;
+            html += `<td><span class="${orderStatus.class}">${orderStatus.label}</span></td>`;
+            html += `<td class="action-icons">
+                        <i class="fas fa-cart-plus action-inc-order" data-id="${c.id}" title="快捷下单 (默认USD)"></i>
+                        <i class="fas fa-clock action-history" data-id="${c.id}" title="历史记录"></i>
+                        <i class="fas fa-edit action-edit" data-id="${c.id}" title="编辑"></i>
+                        <i class="fas fa-trash-alt action-delete" data-id="${c.id}" title="删除"></i>
+                     </td>`;
+            html += `</tr>`;
+            const displayStyle = isExpanded ? '' : 'display: none;';
+            html += `<tr class="order-subtable-row" id="order-subtable-row-${c.id}" style="${displayStyle}">
+                        <td colspan="8" style="padding: 0 1rem 0.8rem 1rem; background: #fefef7;">
+                            <div id="order-subtable-${c.id}">加载中...</div>
+                        </td>
+                     </tr>`;
+        }
+        tableBody.innerHTML = html;
+        if(currentlyExpandedCustomerId) {
+            renderOrderSubtable(currentlyExpandedCustomerId);
+        }
+    }
+
+    function toggleOrderDetail(customerId) {
+        const row = document.getElementById(`order-subtable-row-${customerId}`);
+        if(!row) return;
+        if(currentlyExpandedCustomerId === customerId) {
+            row.style.display = 'none';
+            currentlyExpandedCustomerId = null;
+        } else {
+            if(currentlyExpandedCustomerId) {
+                const prev = document.getElementById(`order-subtable-row-${currentlyExpandedCustomerId}`);
+                if(prev) prev.style.display = 'none';
+            }
+            currentlyExpandedCustomerId = customerId;
+            row.style.display = '';
+            renderOrderSubtable(customerId);
+        }
+    }
+
+    function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
+
+    function quickAddOrder(customerId) {
+        const customer = customers.find(c => c.id === customerId);
+        if(!customer) return;
+        const product = prompt(`为 ${customer.name} 快速添加订单\n请输入产品名称:`, "产品XXX");
+        if(!product) return;
+        const productTrim = product.trim();
+        if(!productTrim) { showToast('产品名称不能为空', true); return; }
+        let qty = parseInt(prompt("请输入数量:", "1"));
+        if(isNaN(qty) || qty < 1) qty = 1;
+        let price = parseFloat(prompt("请输入单价 (USD):", "0"));
+        if(isNaN(price)) price = 0;
+        const amount = qty * price;
+        const newOrder = {
+            id: generateId(),
+            orderNo: `ORD-${new Date().getFullYear()}${(Math.floor(Math.random()*9000)+1000)}`,
+            productName: productTrim,
+            quantity: qty,
+            unitPrice: price,
+            amount: amount,
+            currency: 'USD',
+            orderDate: new Date().toISOString().slice(0,10),
+            status: '待处理'
+        };
+        if(!customer.orders) customer.orders = [];
+        customer.orders.push(newOrder);
+        updateOrderCount(customer);
+        addHistory(customerId, `📦 快捷新增订单: ${newOrder.orderNo} | 产品:${newOrder.productName} x${newOrder.quantity} 单价:${price}USD 金额:${amount}USD`);
+        showToast(`为 ${customer.name} 添加订单: ${newOrder.productName} x${newOrder.quantity} 单价$${price}`);
+    }
+
+    function deleteCustomer(id) {
+        const c = customers.find(c => c.id === id);
+        if(!c) return;
+        if(confirm(`删除客户「${c.name}」及其所有订单和历史？`)) {
+            customers = customers.filter(c => c.id !== id);
+            if(currentlyExpandedCustomerId === id) currentlyExpandedCustomerId = null;
+            persist();
+            renderTable();
+            showToast(`已删除 ${c.name}`);
+        }
+    }
+
+    function openOrderForm(customerId, orderId = null) {
+        const customer = customers.find(c => c.id === customerId);
+        if(!customer) return;
+        orderCustomerIdHidden.value = customerId;
+        orderFormTitle.innerText = orderId ? '编辑订单' : '新增订单';
+        orderEditId.value = orderId || '';
+        if(orderId) {
+            const order = (customer.orders || []).find(o => o.id === orderId);
+            if(order) {
+                orderNoInput.value = order.orderNo || '';
+                orderStatusSelect.value = order.status || '待处理';
+                productNameInput.value = order.productName || '';
+                quantityInput.value = order.quantity || 1;
+                unitPriceInput.value = order.unitPrice || 0;
+                orderCurrencySelect.value = order.currency || 'USD';
+                orderAmountInput.value = order.amount || 0;
+                orderDateInput.value = order.orderDate || '';
+            }
+        } else {
+            orderNoInput.value = `ORD-${Date.now().toString().slice(-8)}`;
+            orderStatusSelect.value = '待处理';
+            productNameInput.value = '';
+            quantityInput.value = 1;
+            unitPriceInput.value = 0;
+            orderCurrencySelect.value = 'USD';
+            orderAmountInput.value = '0';
+            orderDateInput.value = new Date().toISOString().slice(0,10);
+        }
+        recalcAmount();
+        bindAmountCalculation();
+        orderFormModal.classList.add('active');
+    }
+
+    function saveOrder(e) {
+        e.preventDefault();
+        const custId = orderCustomerIdHidden.value;
+        const customer = customers.find(c => c.id === custId);
+        if(!customer) return;
+        const orderId = orderEditId.value;
+        const orderNo = orderNoInput.value.trim();
+        const status = orderStatusSelect.value;
+        const productName = productNameInput.value.trim();
+        if(!orderNo) { showToast('订单号不能为空', true); return; }
+        if(!productName) { showToast('产品名称不能为空', true); return; }
+        const quantity = parseInt(quantityInput.value) || 1;
+        const unitPrice = parseFloat(unitPriceInput.value) || 0;
+        const amount = parseFloat(orderAmountInput.value) || 0;
+        const currency = orderCurrencySelect.value;
+        const orderDate = orderDateInput.value;
+        if(orderId) {
+            const idx = customer.orders.findIndex(o => o.id === orderId);
+            if(idx !== -1) {
+                const old = customer.orders[idx];
+                customer.orders[idx] = { ...old, orderNo, status, productName, quantity, unitPrice, amount, currency, orderDate };
+                const sym = currency === 'CNY' ? '¥' : '$';
+                addHistory(custId, `✏️ 编辑订单: ${old.orderNo} → 产品:${productName} 数量:${quantity} 单价:${sym}${unitPrice} 金额:${sym}${amount}`);
+            }
+        } else {
+            const newOrder = { id: generateId(), orderNo, status, productName, quantity, unitPrice, amount, currency, orderDate };
+            if(!customer.orders) customer.orders = [];
+            customer.orders.push(newOrder);
+            const sym = currency === 'CNY' ? '¥' : '$';
+            addHistory(custId, `➕ 新增订单: ${orderNo} 状态:${status} 产品:${productName} x${quantity} 单价:${sym}${unitPrice} 金额:${sym}${amount}`);
+        }
+        updateOrderCount(customer);
+        persist();
+        renderTable();
+        closeOrderFormModal();
+        showToast('订单保存成功');
+    }
+
+    function deleteOrderById(customerId, orderId) {
+        const customer = customers.find(c => c.id === customerId);
+        if(!customer) return;
+        const order = customer.orders.find(o => o.id === orderId);
+        if(!order) return;
+        if(confirm(`删除订单 ${order.orderNo} (${order.productName}) ?`)) {
+            customer.orders = customer.orders.filter(o => o.id !== orderId);
+            updateOrderCount(customer);
+            addHistory(customerId, `🗑️ 删除订单: ${order.orderNo} (${order.productName})`);
+            persist();
+            renderTable();
+            showToast('订单已删除');
+        }
+    }
+
+    function closeOrderFormModal() { orderFormModal.classList.remove('active'); }
+    function openAddModal() { modalTitle.innerText = '新增客户'; editIdInput.value = ''; clearCustomerForm(); customerModal.classList.add('active'); }
+    function openEditModal(customerId) {
+        const c = customers.find(c => c.id === customerId);
+        if(c) {
+            modalTitle.innerText = '编辑客户';
+            editIdInput.value = c.id;
+            custName.value = c.name || '';
+            custPhone.value = c.phone || '';
+            custEmail.value = c.email || '';
+            custCompany.value = c.company || '';
+            custNotes.value = c.notes || '';
+            customerModal.classList.add('active');
+        }
+    }
+    function clearCustomerForm() { custName.value = ''; custPhone.value = ''; custEmail.value = ''; custCompany.value = ''; custNotes.value = ''; }
+    function closeCustomerModal() { customerModal.classList.remove('active'); }
+
+    function saveCustomer(e) {
+        e.preventDefault();
+        const id = editIdInput.value;
+        const name = custName.value.trim();
+        if(!name) { showToast('请填写客户姓名', true); return; }
+        const now = new Date().toISOString();
+        if(id) {
+            const idx = customers.findIndex(c => c.id === id);
+            if(idx !== -1) {
+                const old = customers[idx];
+                customers[idx] = { ...old, name, phone: custPhone.value.trim(), email: custEmail.value.trim(), company: custCompany.value.trim(), notes: custNotes.value.trim(), updatedAt: now };
+                addHistory(id, `✏️ 编辑客户资料`);
+                showToast('客户信息已更新');
+            }
+        } else {
+            const newC = { id: generateId(), name, phone: custPhone.value.trim(), email: custEmail.value.trim(), company: custCompany.value.trim(), notes: custNotes.value.trim(), orderCount: 0, createdAt: now, updatedAt: now, history: [], orders: [] };
+            newC.history.push({ time: now, event: '✨ 客户档案创建' });
+            customers.push(newC);
+            showToast(`客户 ${name} 已添加`);
+        }
+        persist();
+        renderTable();
+        closeCustomerModal();
+    }
+
+    function showHistory(customerId) {
+        const customer = customers.find(c => c.id === customerId);
+        if(!customer) return;
+        const historyArr = customer.history || [];
+        if(historyArr.length === 0) historyContent.innerHTML = '<div style="text-align:center;">暂无历史记录</div>';
+        else {
+            let html = '';
+            historyArr.slice(0, 50).forEach(h => { html += `<div class="history-item"><div class="history-time">🕒 ${formatDate(h.time)}</div><div>📌 ${escapeHtml(h.event)}</div></div>`; });
+            historyContent.innerHTML = html;
+        }
+        historyModal.classList.add('active');
+    }
+    function closeHistoryModal() { historyModal.classList.remove('active'); }
+
+    function exportOrdersCSV() {
+        const rows = [];
+        const headers = ['客户姓名', '公司名称', '客户电话', '客户邮箱', '客户备注', '订单号', '订单状态', '产品名称', '数量', '单价', '金额', '币种', '下单日期'];
+        for (const c of customers) {
+            const orders = c.orders || [];
+            if (orders.length === 0) continue;
+            for (const order of orders) {
+                const currency = order.currency || 'USD';
+                rows.push([
+                    c.name || '', c.company || '', c.phone || '', c.email || '', c.notes || '',
+                    order.orderNo || '', order.status || '', order.productName || '', order.quantity || 1,
+                    parseFloat(order.unitPrice || 0).toFixed(2), parseFloat(order.amount || 0).toFixed(2),
+                    currency, order.orderDate || ''
+                ]);
+            }
+        }
+        if (rows.length === 0) { showToast('暂无订单数据可导出', true); return; }
+        const escape = (cell) => {
+            if (cell === undefined || cell === null) return '';
+            const str = String(cell);
+            if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) return '"' + str.replace(/"/g, '""') + '"';
+            return str;
+        };
+        const csv = [headers.map(escape).join(',')];
+        for (const row of rows) csv.push(row.map(escape).join(','));
+        const blob = new Blob(["\uFEFF" + csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `订单明细_含单价_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.csv`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        showToast(`已导出 ${rows.length} 笔订单明细`);
+    }
+
+    function resetDemo() {
+        if(confirm('重置将丢失所有数据，恢复为虚拟示例数据（所有姓名、电话、公司、产品均为虚构）。确定吗？')) {
+            localStorage.removeItem(STORAGE_KEY);
+            loadData();
+            currentSearchKeyword = '';
+            searchInput.value = '';
+            currentlyExpandedCustomerId = null;
+            renderTable();
+            showToast('已重置为虚拟示例数据');
+        }
+    }
+
+    function handleTableClick(e) {
+        const target = e.target;
+        const id = target.getAttribute('data-id');
+        if(target.classList.contains('order-detail-icon')) toggleOrderDetail(id);
+        else if(target.classList.contains('action-inc-order')) quickAddOrder(id);
+        else if(target.classList.contains('action-history')) showHistory(id);
+        else if(target.classList.contains('action-edit')) openEditModal(id);
+        else if(target.classList.contains('action-delete')) deleteCustomer(id);
+    }
+
+    function bindEvents() {
+        newCustomerBtn.addEventListener('click', openAddModal);
+        cancelModalBtn.addEventListener('click', closeCustomerModal);
+        customerForm.addEventListener('submit', saveCustomer);
+        exportCsvBtn.addEventListener('click', exportOrdersCSV);
+        resetDemoBtn.addEventListener('click', resetDemo);
+        searchInput.addEventListener('input', (e) => { currentSearchKeyword = e.target.value; renderTable(); });
+        clearSearchBtn.addEventListener('click', () => { searchInput.value = ''; currentSearchKeyword = ''; renderTable(); });
+        tableBody.addEventListener('click', handleTableClick);
+        closeHistoryBtn.addEventListener('click', closeHistoryModal);
+        historyModal.addEventListener('click', (e) => { if(e.target === historyModal) closeHistoryModal(); });
+        customerModal.addEventListener('click', (e) => { if(e.target === customerModal) closeCustomerModal(); });
+        orderForm.addEventListener('submit', saveOrder);
+        cancelOrderFormBtn.addEventListener('click', closeOrderFormModal);
+        orderFormModal.addEventListener('click', (e) => { if(e.target === orderFormModal) closeOrderFormModal(); });
+    }
+
+    function init() { loadData(); bindEvents(); renderTable(); }
+    init();
+</script>
+</body>
+</html>
