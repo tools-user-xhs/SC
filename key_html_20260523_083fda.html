@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>重点客户档案系统 | 智能表单 · 双语 · 丰富选项</title>
+    <!-- html2pdf 库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- SheetJS -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #eef2f7; font-family: 'Segoe UI', Roboto, sans-serif; padding: 32px 24px; color: #1a2c3e; }
+        .app-container { max-width: 1400px; margin: 0 auto; background: white; border-radius: 28px; box-shadow: 0 20px 35px -12px rgba(0,0,0,0.1); padding: 24px 32px 40px; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+        h1 { font-size: 1.9rem; font-weight: 700; background: linear-gradient(135deg, #1e466e, #2c5a8c); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .lang-btn { background: white; border: 1px solid #2c7da0; padding: 8px 20px; border-radius: 40px; font-weight: 500; cursor: pointer; transition: 0.2s; }
+        .lang-btn:hover { background: #e6f4fa; }
+        .sub { color: #5e7a93; border-left: 3px solid #2c7da0; padding-left: 14px; margin-bottom: 32px; }
+        .selector-area { background: #f8fafd; border-radius: 20px; padding: 20px 24px; margin-bottom: 32px; border: 1px solid #e2edf2; }
+        .selector-label { font-weight: 600; margin-bottom: 12px; }
+        select { width: 100%; max-width: 360px; padding: 12px 18px; font-size: 1rem; border-radius: 48px; border: 1px solid #cbdde9; background: white; cursor: pointer; outline: none; }
+        .dynamic-panel { background: #ffffff; border-radius: 24px; border: 1px solid #e9f0f5; padding: 28px 30px; margin-bottom: 40px; box-shadow: 0 6px 12px -8px rgba(0,0,0,0.05); }
+        .section-title { font-size: 1.25rem; font-weight: 700; margin: 20px 0 16px 0; padding-left: 12px; border-left: 5px solid #2c7da0; color: #1f4e6e; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px 28px; margin-bottom: 20px; }
+        .field-group { display: flex; flex-direction: column; gap: 6px; }
+        .field-group label { font-weight: 600; font-size: 0.85rem; color: #2c5a74; }
+        .field-group input, .field-group textarea, .field-group select { padding: 10px 12px; border-radius: 14px; border: 1px solid #cfdfe9; font-size: 0.9rem; }
+        input:focus, textarea:focus { border-color: #2c7da0; outline: none; box-shadow: 0 0 0 2px rgba(44,125,160,0.2); }
+        input[list] { background-color: white; }
+        textarea { resize: vertical; min-height: 70px; }
+        .photo-zone { background: #f9fbfe; border-radius: 24px; padding: 16px 20px; margin: 20px 0 24px; border: 1px dashed #bdd4e2; display: flex; flex-wrap: wrap; align-items: center; gap: 24px; }
+        .photo-preview { width: 100px; height: 100px; border-radius: 20px; background: #eef2f6; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid #cfdfe9; }
+        .photo-preview img { max-width: 100%; max-height: 100%; object-fit: cover; }
+        .btn-outline-sm { background: white; border: 1px solid #2c7da0; padding: 8px 18px; border-radius: 40px; font-size: 0.8rem; cursor: pointer; transition: 0.2s; }
+        .btn-outline-sm:hover { background: #e6f4fa; }
+        .action-buttons { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 20px; }
+        .btn-primary { background: #1f6392; border: none; padding: 12px 28px; border-radius: 48px; font-weight: 600; color: white; cursor: pointer; }
+        .btn-secondary { background: #eef2f7; border: 1px solid #cbdde9; padding: 12px 28px; border-radius: 48px; font-weight: 500; cursor: pointer; }
+        .archive-card { background: #fefefe; border-radius: 28px; border: 1px solid #e2edf2; overflow: hidden; margin-top: 10px; }
+        .card-header { background: #eef3fc; padding: 18px 26px; font-weight: 700; font-size: 1.2rem; border-bottom: 1px solid #dae9f2; text-align: center; }
+        .table-wrapper { overflow-x: auto; padding: 20px 24px; min-height: 200px; }
+        .client-info-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .client-info-table th, .client-info-table td { border: 1px solid #d4e0e9; padding: 12px 15px; vertical-align: top; text-align: left; }
+        .client-info-table th { background: #f5f9fe; width: 180px; font-weight: 600; color: #1a4c6e; }
+        .section-header th { background: #e3f0f9; text-align: center; font-weight: 700; }
+        .no-data { text-align: center; padding: 40px; color: #7f9caf; }
+        .footer-buttons { display: flex; justify-content: flex-end; gap: 16px; padding: 20px 26px; border-top: 1px solid #e9eff4; }
+        .success-tip { color: #1f6392; margin-top: 12px; font-size: 0.85rem; font-weight: 500; }
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .selector-area, .dynamic-panel, .footer-buttons, .success-tip, h1, .sub, .lang-btn, .action-buttons, .photo-zone { display: none !important; }
+            .archive-card { border: none; margin: 0; padding: 0; }
+            .client-info-table th, .client-info-table td { border: 1px solid #aaa; }
+            .section-header th { background: #eef3fc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="header-row"><h1 id="mainTitle">📇 重点客户档案中心</h1><button id="langSwitchBtn" class="lang-btn">English</button></div>
+    <div id="subText" class="sub">三大结构信息 · 一键生成档案表 | 支持打印/PDF</div>
+    <div class="selector-area"><div id="selectorLabel" class="selector-label">⚙️ 操作模式</div>
+        <select id="modeSelect"><option value="" disabled selected>—— 请选择操作类型 ——</option><option value="edit">✏️ 编辑档案信息</option><option value="upload">📂 上传档案信息</option></select>
+        <div id="selectorHint" style="font-size: 0.75rem; color: #6385a3; margin-top: 10px;">* 选择后自动切换界面，保存或导入后档案表立即生成</div>
+    </div>
+    <div id="dynamicContainer" class="dynamic-panel"><div class="no-data">⬅️ 请从上方下拉框选择操作模式</div></div>
+    <div id="generatedArchiveArea"><div class="archive-card"><div id="archiveCardHeader" class="card-header"><span>📄 客户档案表</span></div><div id="archiveTableContent" class="table-wrapper"><div class="no-data">暂无档案数据，请通过编辑或上传创建客户档案</div></div><div class="footer-buttons"><button id="printBtnGlobal" class="btn-secondary">🖨️ 打印档案表</button><button id="savePdfBtnGlobal" class="btn-primary">📎 保存为PDF</button></div></div></div>
+</div>
+<script>
+    // ========================= 国际化文本库 =========================
+    const i18n = {
+        zh: {
+            title: "📇 重点客户档案中心", sub: "三大结构信息 · 一键生成档案表 | 支持打印/PDF", selectorLabel: "⚙️ 操作模式", selectorHint: "* 选择后自动切换界面，保存或导入后档案表立即生成",
+            editOption: "✏️ 编辑档案信息", uploadOption: "📂 上传档案信息", editTitle: "✏️ 编辑重点客户档案（三大结构）", uploadTitle: "📂 批量/单次导入档案",
+            uploadDesc: "📎 下载标准模板（包含三大结构全部字段） → 填充后导入Excel或CSV/TXT，系统自动映射并生成档案表。", downloadTemplate: "⬇️ 下载完整模板 (CSV)",
+            photoLabel: "📸 上传客户照片 (单独上传，与导入数据合并)", importBtn: "📂 选择文件导入 (Excel/TXT/CSV)", photoUpdated: "✅ 客户照片已更新至档案表",
+            importSuccess: "✅ 导入成功，下方档案表已按三大结构生成！", saveGenerate: "💾 保存并生成档案表", resetForm: "🔄 重置表单", uploadPhoto: "上传客户照片",
+            clearPhoto: "🗑️ 清除照片", noPhoto: "无照片", savePdf: "📎 保存为PDF", print: "🖨️ 打印档案表", archiveHeader: "📄 客户档案表",
+            section1: "📌 一、客户基本信息", section2: "📊 二、采购与市场信息", section3: "🏢 三、客户所在公司基本信息",
+            fullName: "客户全名", gender: "性别", idNumber: "证件号码", nationality: "国籍/地区", phone: "联系电话", email: "电子邮箱", wechat: "微信/其他",
+            birthday: "客户生日", personalAddress: "家庭/个人地址", annualPurchase: "年采购额/预算", mainProducts: "主要采购品类", marketChannel: "获客渠道",
+            paymentTerms: "信用账期/结算方式", recentOrderDate: "最近下单日期", cooperationYears: "合作年限", valueLevel: "客户价值等级",
+            companyName: "公司全称", companyIndustry: "所属行业", companyScale: "公司规模(人数/营收)", companyWebsite: "公司官网", companyAddress: "公司地址",
+            legalPerson: "法定代表人", businessLicense: "统一社会信用代码", companyRemarks: "公司补充备注", customerPhoto: "客户照片", notUploaded: "未上传",
+            genderMale: "男", genderFemale: "女", valueS: "S类 (战略级)", valueA: "A类 (重点)", valueB: "B类 (普通)",
+            successMsg: "✅ 档案已生成并展示在下方表格中！", resetConfirm: "重置会清空所有表单字段，是否继续？",
+            staffScaleLabel: "员工人数范围", revenueScaleLabel: "年营收范围",
+            staffOptions: ["1-10人","11-50人","51-200人","201-500人","501-1000人","1000-5000人","5000人以上"],
+            revenueOptions: ["<100万","100-500万","500-1000万","1000-5000万","5000万-1亿","1-5亿","5-10亿","10亿以上"],
+            // 采购市场相关下拉选项库
+            marketChannelList: ["行业展会","搜索引擎","老客户推荐","社交媒体","电话销售","线下活动","合作伙伴","线上广告","内容营销","其他"],
+            paymentTermsList: ["月结30天","月结60天","预付全款","预付50%","季度结算","年结","按项目结算"],
+            cooperationYearsList: ["1年以内","1-3年","3-5年","5-10年","10年以上"]
+        },
+        en: {
+            title: "📇 Key Account Archive Center", sub: "3-Section Info · One-Click Archive | Print/PDF", selectorLabel: "⚙️ Operation Mode", selectorHint: "* Select mode, save/import to generate archive",
+            editOption: "✏️ Edit Archive", uploadOption: "📂 Upload Archive", editTitle: "✏️ Edit Key Account Archive (3 Sections)", uploadTitle: "📂 Batch / Single Import",
+            uploadDesc: "📎 Download template (all fields) → fill and import Excel/CSV/TXT, auto-map & generate archive.", downloadTemplate: "⬇️ Download Template (CSV)",
+            photoLabel: "📸 Upload Photo (separate, merged with data)", importBtn: "📂 Select File (Excel/TXT/CSV)", photoUpdated: "✅ Photo updated",
+            importSuccess: "✅ Import successful, archive generated!", saveGenerate: "💾 Save & Generate", resetForm: "🔄 Reset", uploadPhoto: "Upload Photo",
+            clearPhoto: "🗑️ Clear", noPhoto: "No Photo", savePdf: "📎 Save as PDF", print: "🖨️ Print Archive", archiveHeader: "📄 Key Account Archive",
+            section1: "📌 1. Customer Basic Info", section2: "📊 2. Procurement & Marketing", section3: "🏢 3. Company Basic Info",
+            fullName: "Full Name", gender: "Gender", idNumber: "ID/Passport", nationality: "Nationality", phone: "Phone", email: "Email", wechat: "WeChat/Others",
+            birthday: "Birthday", personalAddress: "Home Address", annualPurchase: "Annual Purchase", mainProducts: "Main Procurement", marketChannel: "Acquisition Channel",
+            paymentTerms: "Payment Terms", recentOrderDate: "Recent Order Date", cooperationYears: "Cooperation Years", valueLevel: "Customer Value",
+            companyName: "Company Name", companyIndustry: "Industry", companyScale: "Company Size (Staff/Revenue)", companyWebsite: "Website", companyAddress: "Company Address",
+            legalPerson: "Legal Rep.", businessLicense: "Business License", companyRemarks: "Remarks", customerPhoto: "Photo", notUploaded: "Not uploaded",
+            genderMale: "Male", genderFemale: "Female", valueS: "S-Class (Strategic)", valueA: "A-Class (Key)", valueB: "B-Class (Normal)",
+            successMsg: "✅ Archive generated below!", resetConfirm: "Reset all fields?",
+            staffScaleLabel: "Staff Size", revenueScaleLabel: "Annual Revenue",
+            staffOptions: ["1-10","11-50","51-200","201-500","501-1000","1000-5000","5000+"],
+            revenueOptions: ["<1M","1-5M","5-10M","10-50M","50-100M","100-500M","500M-1B",">1B"],
+            // 英文版下拉选项
+            marketChannelList: ["Trade Show","Search Engine","Referral","Social Media","Telemarketing","Offline Event","Partners","Online Ads","Content Marketing","Others"],
+            paymentTermsList: ["Net 30 days","Net 60 days","Prepaid Full","50% Prepaid","Quarterly Settlement","Annual Settlement","Per Project"],
+            cooperationYearsList: ["<1 year","1-3 years","3-5 years","5-10 years",">10 years"]
+        }
+    };
+    let currentLang = 'zh';
+    function t(key) { return i18n[currentLang][key] || (Array.isArray(i18n['zh'][key]) ? i18n['zh'][key] : key); }
+
+    // 客户数据模型
+    let currentCustomer = {
+        fullName: '', gender: '', idNumber: '', nationality: '', phone: '', email: '', wechat: '', birthday: '', personalAddress: '',
+        annualPurchase: '', mainProducts: '', marketChannel: '', paymentTerms: '', recentOrderDate: '', cooperationYears: '', valueLevel: 'A类',
+        companyName: '', companyIndustry: '', companyScale: '', companyWebsite: '', companyAddress: '', legalPerson: '', businessLicense: '', companyRemarks: '',
+        photoBase64: null
+    };
+    let currentMode = '';
+    const modeSelect = document.getElementById('modeSelect');
+    const dynamicContainer = document.getElementById('dynamicContainer');
+    const archiveTableContent = document.getElementById('archiveTableContent');
+    const langBtn = document.getElementById('langSwitchBtn');
+
+    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+
+    // 渲染档案表
+    function renderArchiveTable() {
+        const d = currentCustomer;
+        const hasData = !!(d.fullName || d.companyName || d.phone || d.annualPurchase || d.photoBase64);
+        if (!hasData) { archiveTableContent.innerHTML = `<div class="no-data">暂无档案数据，请通过编辑或上传创建客户档案</div>`; return; }
+        const photoHtml = d.photoBase64 ? `<img src="${d.photoBase64}" style="max-width:100px; border-radius:12px;" />` : `<span>${t('notUploaded')}</span>`;
+        const tableHtml = `
+            <table class="client-info-table">
+                <tr class="section-header"><th colspan="4">${t('section1')}</th></tr>
+                <tr><th>${t('fullName')}</th><td>${escapeHtml(d.fullName) || '—'}</td><th>${t('gender')}</th><td>${escapeHtml(d.gender) || '—'}</td></tr>
+                <tr><th>${t('idNumber')}</th><td>${escapeHtml(d.idNumber) || '—'}</td><th>${t('nationality')}</th><td>${escapeHtml(d.nationality) || '—'}</td></tr>
+                <tr><th>${t('phone')}</th><td>${escapeHtml(d.phone) || '—'}</td><th>${t('email')}</th><td>${escapeHtml(d.email) || '—'}</td></tr>
+                <tr><th>${t('wechat')}</th><td colspan="3">${escapeHtml(d.wechat) || '—'}</td></tr>
+                <tr><th>${t('birthday')}</th><td>${escapeHtml(d.birthday) || '—'}</td><th>${t('personalAddress')}</th><td>${escapeHtml(d.personalAddress) || '—'}</td></tr>
+                <tr class="section-header"><th colspan="4">${t('section2')}</th></tr>
+                <tr><th>${t('annualPurchase')}</th><td>${escapeHtml(d.annualPurchase) || '—'}</td><th>${t('mainProducts')}</th><td>${escapeHtml(d.mainProducts) || '—'}</td></tr>
+                <tr><th>${t('marketChannel')}</th><td>${escapeHtml(d.marketChannel) || '—'}</td><th>${t('paymentTerms')}</th><td>${escapeHtml(d.paymentTerms) || '—'}</td></tr>
+                <tr><th>${t('recentOrderDate')}</th><td>${escapeHtml(d.recentOrderDate) || '—'}</td><th>${t('cooperationYears')}</th><td>${escapeHtml(d.cooperationYears) || '—'}</td></tr>
+                <tr><th>${t('valueLevel')}</th><td colspan="3">${escapeHtml(d.valueLevel) || 'A类'}</td></tr>
+                <tr class="section-header"><th colspan="4">${t('section3')}</th></tr>
+                <tr><th>${t('companyName')}</th><td>${escapeHtml(d.companyName) || '—'}</td><th>${t('companyIndustry')}</th><td>${escapeHtml(d.companyIndustry) || '—'}</td></tr>
+                <tr><th>${t('companyScale')}</th><td colspan="3">${escapeHtml(d.companyScale) || '—'}</td></tr>
+                <tr><th>${t('companyWebsite')}</th><td colspan="3">${escapeHtml(d.companyWebsite) || '—'}</td></tr>
+                <tr><th>${t('companyAddress')}</th><td colspan="3">${escapeHtml(d.companyAddress) || '—'}</td></tr>
+                <tr><th>${t('legalPerson')}</th><td>${escapeHtml(d.legalPerson) || '—'}</td><th>${t('businessLicense')}</th><td>${escapeHtml(d.businessLicense) || '—'}</td></tr>
+                <tr><th>${t('companyRemarks')}</th><td colspan="3">${escapeHtml(d.companyRemarks) || '—'}</td></tr>
+                <tr><th>${t('customerPhoto')}</th><td colspan="3">${photoHtml}</td></tr>
+            </table>`;
+        archiveTableContent.innerHTML = tableHtml;
+    }
+
+    function updateCustomerData(newData, showMsg = true) {
+        Object.assign(currentCustomer, newData);
+        renderArchiveTable();
+        if (currentMode === 'edit') renderEditInterface();
+        if (showMsg) {
+            const tip = document.createElement('div'); tip.className = 'success-tip'; tip.innerText = t('successMsg');
+            const container = document.querySelector('.dynamic-panel');
+            const oldTip = document.getElementById('dynamicGenTip');
+            if (oldTip) oldTip.remove(); tip.id = 'dynamicGenTip';
+            if (container) container.appendChild(tip);
+            setTimeout(() => tip.remove(), 2500);
+        }
+    }
+
+    function handlePhotoUpload(file, onSuccess) { if (!file) return; const reader = new FileReader(); reader.onload = e => onSuccess(e.target.result); reader.readAsDataURL(file); }
+
+    function makeEditableSelect(currentValue, optionsList, placeholder, id) {
+        const datalistId = id + '_datalist';
+        const optionsHtml = (optionsList || []).map(opt => `<option value="${escapeHtml(opt)}">`).join('');
+        return `<input list="${datalistId}" id="${id}" value="${escapeHtml(currentValue)}" placeholder="${escapeHtml(placeholder)}" style="width:100%;"><datalist id="${datalistId}">${optionsHtml}</datalist>`;
+    }
+
+    // 丰富的主要采购品类（中英文统一显示为中文，但用户可手动编辑；为了双语体验，可保留原样，用户可自由输入）
+    const richMainProducts = ["软件服务","硬件设备","咨询培训","外包服务","云计算","数据服务","IT基础设施","办公用品","市场营销服务","物流运输","原材料","零部件","成品采购","研发服务","人力资源服务","财务咨询","法律服务","设备租赁","广告投放","会展服务","其他"];
+    const richIndustries = ["信息技术","互联网/电商","金融/银行","保险","制造业","医疗健康","教育/培训","建筑/房地产","贸易/进出口","物流/仓储","能源/环保","文化传媒","旅游/酒店","餐饮/食品","汽车/零部件","生物科技","农业","政府/非营利","通信","法律服务","咨询服务","其他"];
+
+    function parseScale(scaleStr) {
+        if (!scaleStr) return { staff: '', revenue: '' };
+        const parts = scaleStr.split('/');
+        if (parts.length === 2) return { staff: parts[0].trim(), revenue: parts[1].trim() };
+        return { staff: '', revenue: '' };
+    }
+    function composeScale(staff, revenue) { if (!staff && !revenue) return ''; return `${staff || '?'} / ${revenue || '?'}`; }
+
+    function renderEditInterface() {
+        const d = currentCustomer;
+        let { staff: curStaff, revenue: curRevenue } = parseScale(d.companyScale);
+        const mainProductsOpts = richMainProducts;
+        const industryOpts = richIndustries;
+        const marketChannelOpts = t('marketChannelList');
+        const paymentTermsOpts = t('paymentTermsList');
+        const cooperationOpts = t('cooperationYearsList');
+        const genderMale = t('genderMale'), genderFemale = t('genderFemale');
+        const valS = t('valueS'), valA = t('valueA'), valB = t('valueB');
+
+        dynamicContainer.innerHTML = `
+            <div><span class="section-title" style="margin-top:0;">${t('editTitle')}</span></div>
+            <div class="section-title">${t('section1')}</div>
+            <div class="form-grid">
+                <div class="field-group"><label>${t('fullName')} *</label><input type="text" id="editFullName" value="${escapeHtml(d.fullName)}"></div>
+                <div class="field-group"><label>${t('gender')}</label><select id="editGender"><option value="">-</option><option value="${genderMale}" ${d.gender===genderMale?'selected':''}>${genderMale}</option><option value="${genderFemale}" ${d.gender===genderFemale?'selected':''}>${genderFemale}</option></select></div>
+                <div class="field-group"><label>${t('idNumber')}</label><input type="text" id="editIdNumber" value="${escapeHtml(d.idNumber)}"></div>
+                <div class="field-group"><label>${t('nationality')}</label><input type="text" id="editNationality" value="${escapeHtml(d.nationality)}"></div>
+                <div class="field-group"><label>${t('phone')}</label><input type="tel" id="editPhone" value="${escapeHtml(d.phone)}"></div>
+                <div class="field-group"><label>${t('email')}</label><input type="email" id="editEmail" value="${escapeHtml(d.email)}"></div>
+                <div class="field-group"><label>${t('wechat')}</label><input type="text" id="editWechat" value="${escapeHtml(d.wechat)}"></div>
+                <div class="field-group"><label>${t('birthday')}</label><input type="date" id="editBirthday" value="${d.birthday||''}"></div>
+                <div class="field-group"><label>${t('personalAddress')}</label><textarea id="editPersonalAddress" rows="2">${escapeHtml(d.personalAddress)}</textarea></div>
+            </div>
+            <div class="section-title">${t('section2')}</div>
+            <div class="form-grid">
+                <div class="field-group"><label>${t('annualPurchase')}</label><input type="text" id="editAnnualPurchase" value="${escapeHtml(d.annualPurchase)}"></div>
+                <div class="field-group"><label>${t('mainProducts')}</label>${makeEditableSelect(d.mainProducts, mainProductsOpts, '', 'editMainProducts')}</div>
+                <div class="field-group"><label>${t('marketChannel')}</label>${makeEditableSelect(d.marketChannel, marketChannelOpts, '', 'editMarketChannel')}</div>
+                <div class="field-group"><label>${t('paymentTerms')}</label>${makeEditableSelect(d.paymentTerms, paymentTermsOpts, '', 'editPaymentTerms')}</div>
+                <div class="field-group"><label>${t('recentOrderDate')}</label><input type="date" id="editRecentOrderDate" value="${d.recentOrderDate||''}"></div>
+                <div class="field-group"><label>${t('cooperationYears')}</label>${makeEditableSelect(d.cooperationYears, cooperationOpts, '', 'editCooperationYears')}</div>
+                <div class="field-group"><label>${t('valueLevel')}</label><select id="editValueLevel"><option value="S类" ${d.valueLevel==='S类'?'selected':''}>${valS}</option><option value="A类" ${d.valueLevel==='A类'?'selected':''}>${valA}</option><option value="B类" ${d.valueLevel==='B类'?'selected':''}>${valB}</option></select></div>
+            </div>
+            <div class="section-title">${t('section3')}</div>
+            <div class="form-grid">
+                <div class="field-group"><label>${t('companyName')}</label><input type="text" id="editCompanyName" value="${escapeHtml(d.companyName)}"></div>
+                <div class="field-group"><label>${t('companyIndustry')}</label>${makeEditableSelect(d.companyIndustry, industryOpts, '', 'editCompanyIndustry')}</div>
+                <div class="field-group"><label>${t('staffScaleLabel')}</label><select id="editStaffScale"><option value="">-- ${currentLang==='zh'?'请选择':'Select'} --</option>${t('staffOptions').map(opt => `<option value="${opt}" ${curStaff===opt?'selected':''}>${opt}</option>`).join('')}</select></div>
+                <div class="field-group"><label>${t('revenueScaleLabel')}</label><select id="editRevenueScale"><option value="">-- ${currentLang==='zh'?'请选择':'Select'} --</option>${t('revenueOptions').map(opt => `<option value="${opt}" ${curRevenue===opt?'selected':''}>${opt}</option>`).join('')}</select></div>
+                <div class="field-group"><label>${t('companyWebsite')}</label><input type="text" id="editCompanyWebsite" value="${escapeHtml(d.companyWebsite)}"></div>
+                <div class="field-group"><label>${t('companyAddress')}</label><textarea id="editCompanyAddress" rows="2">${escapeHtml(d.companyAddress)}</textarea></div>
+                <div class="field-group"><label>${t('legalPerson')}</label><input type="text" id="editLegalPerson" value="${escapeHtml(d.legalPerson)}"></div>
+                <div class="field-group"><label>${t('businessLicense')}</label><input type="text" id="editBusinessLicense" value="${escapeHtml(d.businessLicense)}"></div>
+                <div class="field-group"><label>${t('companyRemarks')}</label><textarea id="editCompanyRemarks" rows="2">${escapeHtml(d.companyRemarks)}</textarea></div>
+            </div>
+            <div class="photo-zone">
+                <div class="photo-preview" id="editPhotoPreview">${d.photoBase64 ? `<img src="${d.photoBase64}" style="width:100%;height:100%;object-fit:cover;">` : `<span>${t('noPhoto')}</span>`}</div>
+                <div class="photo-buttons"><input type="file" id="editPhotoUploadInput" accept="image/*" style="display:none;"><button class="btn-outline-sm" id="editChoosePhotoBtn">📷 ${t('uploadPhoto')}</button><button class="btn-outline-sm" id="editClearPhotoBtn">🗑️ ${t('clearPhoto')}</button></div>
+            </div>
+            <div class="action-buttons"><button id="saveEditAndGenBtn" class="btn-primary">💾 ${t('saveGenerate')}</button><button id="resetEditBtn" class="btn-secondary">🔄 ${t('resetForm')}</button></div>
+        `;
+
+        const fileInput = document.getElementById('editPhotoUploadInput');
+        const previewDiv = document.getElementById('editPhotoPreview');
+        document.getElementById('editChoosePhotoBtn').onclick = () => fileInput.click();
+        fileInput.onchange = e => { if(e.target.files[0]) handlePhotoUpload(e.target.files[0], base64 => { previewDiv.innerHTML = `<img src="${base64}" style="width:100%;height:100%;object-fit:cover;">`; currentCustomer.photoBase64 = base64; renderArchiveTable(); }); };
+        document.getElementById('editClearPhotoBtn').onclick = () => { previewDiv.innerHTML = `<span>${t('noPhoto')}</span>`; currentCustomer.photoBase64 = null; renderArchiveTable(); fileInput.value = ''; };
+        document.getElementById('saveEditAndGenBtn').onclick = () => {
+            const staff = document.getElementById('editStaffScale').value;
+            const revenue = document.getElementById('editRevenueScale').value;
+            const combinedScale = composeScale(staff, revenue);
+            const updated = {
+                fullName: document.getElementById('editFullName').value, gender: document.getElementById('editGender').value,
+                idNumber: document.getElementById('editIdNumber').value, nationality: document.getElementById('editNationality').value,
+                phone: document.getElementById('editPhone').value, email: document.getElementById('editEmail').value,
+                wechat: document.getElementById('editWechat').value, birthday: document.getElementById('editBirthday').value,
+                personalAddress: document.getElementById('editPersonalAddress').value,
+                annualPurchase: document.getElementById('editAnnualPurchase').value, mainProducts: document.getElementById('editMainProducts').value,
+                marketChannel: document.getElementById('editMarketChannel').value, paymentTerms: document.getElementById('editPaymentTerms').value,
+                recentOrderDate: document.getElementById('editRecentOrderDate').value, cooperationYears: document.getElementById('editCooperationYears').value,
+                valueLevel: document.getElementById('editValueLevel').value,
+                companyName: document.getElementById('editCompanyName').value, companyIndustry: document.getElementById('editCompanyIndustry').value,
+                companyScale: combinedScale, companyWebsite: document.getElementById('editCompanyWebsite').value,
+                companyAddress: document.getElementById('editCompanyAddress').value, legalPerson: document.getElementById('editLegalPerson').value,
+                businessLicense: document.getElementById('editBusinessLicense').value, companyRemarks: document.getElementById('editCompanyRemarks').value,
+                photoBase64: currentCustomer.photoBase64
+            };
+            updateCustomerData(updated, true);
+        };
+        document.getElementById('resetEditBtn').onclick = () => { if(confirm(t('resetConfirm'))) { const empty = { fullName:'', gender:'', idNumber:'', nationality:'', phone:'', email:'', wechat:'', birthday:'', personalAddress:'', annualPurchase:'', mainProducts:'', marketChannel:'', paymentTerms:'', recentOrderDate:'', cooperationYears:'', valueLevel:'A类', companyName:'', companyIndustry:'', companyScale:'', companyWebsite:'', companyAddress:'', legalPerson:'', businessLicense:'', companyRemarks:'', photoBase64:null }; updateCustomerData(empty, false); renderEditInterface(); } };
+        if(currentCustomer.photoBase64 && previewDiv) previewDiv.innerHTML = `<img src="${currentCustomer.photoBase64}" style="width:100%;height:100%;object-fit:cover;">`;
+    }
+
+    function renderUploadInterface() {
+        dynamicContainer.innerHTML = `
+            <div class="section-title" style="margin-top:0;">${t('uploadTitle')}</div>
+            <div style="background:#F4F9FE; border-radius:20px; padding:20px; margin-bottom:24px;"><p>${t('uploadDesc')}</p><button id="downloadFullTemplateBtn" class="btn-outline-sm">⬇️ ${t('downloadTemplate')}</button></div>
+            <div class="photo-zone"><div><label>${t('photoLabel')}</label><br><input type="file" id="uploadPhotoFile" accept="image/*"></div><div class="photo-preview" id="uploadPhotoPreview" style="width:80px;height:80px;">${t('noPhoto')}</div></div>
+            <div class="action-buttons"><button id="importFileBtnUpload" class="btn-primary">📂 ${t('importBtn')}</button><input type="file" id="hiddenFileImport" accept=".xlsx, .xls, .csv, .txt" style="display:none;"></div>
+            <div id="uploadStatusMsg" style="margin-top:16px;"></div>
+        `;
+        const hiddenFile = document.getElementById('hiddenFileImport');
+        document.getElementById('importFileBtnUpload').onclick = () => hiddenFile.click();
+        hiddenFile.onchange = e => { const file = e.target.files[0]; if(!file) return; const ext = file.name.split('.').pop().toLowerCase(); const reader = new FileReader(); reader.onload = ev => { if(ext === 'txt' || ext === 'csv') parseImportData(ev.target.result); else if(ext === 'xlsx' || ext === 'xls') { const data = new Uint8Array(ev.target.result); const workbook = XLSX.read(data,{type:'array'}); const sheet = workbook.Sheets[workbook.SheetNames[0]]; const rows = XLSX.utils.sheet_to_json(sheet,{header:1,defval:""}); if(rows && rows.length>1) parseExcelRows(rows); else alert('Excel no data'); } else alert('Only Excel/CSV/TXT'); }; if(ext === 'xlsx' || ext === 'xls') reader.readAsArrayBuffer(file); else reader.readAsText(file,'UTF-8'); hiddenFile.value = ''; };
+        const photoFile = document.getElementById('uploadPhotoFile'); const previewDiv = document.getElementById('uploadPhotoPreview');
+        photoFile.onchange = e => { if(e.target.files[0]) handlePhotoUpload(e.target.files[0], base64 => { previewDiv.innerHTML = `<img src="${base64}" style="width:100%;height:100%;object-fit:cover;">`; currentCustomer.photoBase64 = base64; renderArchiveTable(); document.getElementById('uploadStatusMsg').innerHTML = t('photoUpdated'); }); };
+        document.getElementById('downloadFullTemplateBtn').onclick = () => {
+            const headers = ['客户全名','性别','证件号码','国籍','联系电话','邮箱','微信','生日','个人地址','年采购额','主要采购品类','获客渠道','信用账期','最近下单日期','合作年限','客户价值等级','公司全称','所属行业','公司规模(人数/营收)','公司官网','公司地址','法定代表人','统一信用代码','公司备注'];
+            const sample = ['张敏华','女','410************','中国','13800138000','zhang@xx.com','zhang_wx','1985-06-15','上海市浦东新区','800万','软件服务','行业展会','月结30天','2025-02-10','5年','A类','云创科技','信息技术','100-500人 / 5000万-1亿','https://yunchuang.com','上海市静安区','张敏华','91440101MA5ABCDE','高新技术企业'];
+            const csvRows = [headers.join(','), sample.join(',')];
+            const blob = new Blob(["\uFEFF"+csvRows.join('\n')],{type:'text/csv;charset=utf-8;'});
+            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'customer_template.csv'; link.click(); URL.revokeObjectURL(link.href);
+        };
+    }
+
+    function parseImportData(text) { const lines = text.split(/\r?\n/).filter(l=>l.trim()); if(lines.length<2) return; const headers=lines[0].split(/,/).map(h=>h.trim()), values=lines[1].split(/,/).map(v=>v.trim()); mapToCustomer(headers,values); }
+    function parseExcelRows(rows) { if(rows.length<2) return; const headers=rows[0].map(c=>String(c||'').trim()), dataRow=rows[1]; mapToCustomer(headers,dataRow); }
+    function mapToCustomer(headers,values) { const mapping={'客户全名':'fullName','性别':'gender','证件号码':'idNumber','国籍':'nationality','联系电话':'phone','邮箱':'email','微信':'wechat','生日':'birthday','个人地址':'personalAddress','年采购额':'annualPurchase','主要采购品类':'mainProducts','获客渠道':'marketChannel','信用账期':'paymentTerms','最近下单日期':'recentOrderDate','合作年限':'cooperationYears','客户价值等级':'valueLevel','公司全称':'companyName','所属行业':'companyIndustry','公司规模(人数/营收)':'companyScale','公司官网':'companyWebsite','公司地址':'companyAddress','法定代表人':'legalPerson','统一信用代码':'businessLicense','公司备注':'companyRemarks'};
+        let newData = { photoBase64: currentCustomer.photoBase64 };
+        for(let i=0;i<headers.length;i++){ let field=mapping[headers[i]]; if(field && values[i]!==undefined && values[i]!=='') newData[field]=String(values[i]); }
+        if(!newData.valueLevel) newData.valueLevel='A类';
+        updateCustomerData(newData,true);
+        const statusDiv=document.getElementById('uploadStatusMsg'); if(statusDiv) statusDiv.innerHTML=t('importSuccess');
+        if(currentMode==='upload') renderUploadInterface();
+    }
+
+    function onModeChange() {
+        const selected = modeSelect.value;
+        if (selected === 'edit') { currentMode = 'edit'; renderEditInterface(); }
+        else if (selected === 'upload') { currentMode = 'upload'; renderUploadInterface(); }
+        else { dynamicContainer.innerHTML = `<div class="no-data">请从上方下拉框选择操作模式</div>`; currentMode = ''; }
+        renderArchiveTable();
+    }
+
+    function printOnlyArchive() { window.print(); }
+    function saveAsPdf() { const el = document.getElementById('archiveTableContent'); if(!el) return; const originalTitle=document.title; document.title='KeyAccount_Archive'; html2pdf().set({margin:0.5, filename:'KeyAccount_Archive.pdf', image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2}, jsPDF:{unit:'in',format:'a4',orientation:'portrait'}}).from(el).save().then(()=>document.title=originalTitle); }
+    document.body.addEventListener('click', e => { if(e.target.id==='printBtnGlobal') printOnlyArchive(); if(e.target.id==='savePdfBtnGlobal') saveAsPdf(); });
+    langBtn.onclick = () => { currentLang = currentLang === 'zh' ? 'en' : 'zh'; langBtn.innerText = currentLang === 'zh' ? 'English' : '中文'; updateUITexts(); };
+    function updateUITexts() {
+        document.getElementById('mainTitle').innerHTML = t('title');
+        document.getElementById('subText').innerHTML = t('sub');
+        document.getElementById('selectorLabel').innerHTML = t('selectorLabel');
+        document.getElementById('selectorHint').innerHTML = t('selectorHint');
+        if (modeSelect.options.length >= 2) { modeSelect.options[1].text = t('editOption'); modeSelect.options[2].text = t('uploadOption'); }
+        document.getElementById('archiveCardHeader').innerHTML = `<span>${t('archiveHeader')}</span>`;
+        const printBtn = document.getElementById('printBtnGlobal'); if(printBtn) printBtn.innerText = t('print');
+        const pdfBtn = document.getElementById('savePdfBtnGlobal'); if(pdfBtn) pdfBtn.innerText = t('savePdf');
+        if (currentMode === 'edit') renderEditInterface();
+        else if (currentMode === 'upload') renderUploadInterface();
+        renderArchiveTable();
+    }
+    modeSelect.addEventListener('change', onModeChange);
+    updateUITexts();
+    renderArchiveTable();
+</script>
+</body>
+</html>
